@@ -35,16 +35,28 @@ class StartScreen(Screen):
         # Start Background image
         with self.canvas:
             self.bg = Rectangle(
-                source="./images/game_start.png", pos=(0, 0), size=Window.size
+                source="./images/game_start.png", 
+                pos=(0, 0), 
+                size=Window.size
             )
+        # Game Title
+        game_title = Label(
+            text="Chocobo Racing",
+            font_size="60sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos_hint={"center_x": 0.5, "top": 1.35}
+        )
+
         # Add start button
         start_button = Button(
             text="Start Game", 
+            font_name="./fonts/pixel_font.ttf",
             size_hint=(0.2, 0.1), 
             pos_hint={"x": 0.4, "y": 0.1}, #start_Btn pos
             background_color=(0, 0, 0, 1) #black button
         )
         start_button.bind(on_press=self.start_game)
+        layout.add_widget(game_title)
         layout.add_widget(start_button)
         self.add_widget(layout)
 
@@ -82,12 +94,12 @@ class GameWidget(Widget):
         self._keyboard = None
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
-        print("down", text)
+        #print("down", text)
         self.pressed_keys.add(text)
 
     def _on_key_up(self, keyboard, keycode):
         text = keycode[1]
-        print("up", text)
+        #print("up", text)
 
         if text in self.pressed_keys:
             self.pressed_keys.remove(text)
@@ -112,7 +124,7 @@ class GameWidget(Widget):
         """
 
         self.hero.pos = (cur_x, cur_y)
-        print(self.hero.pos)
+        #print(self.hero.pos)
 
         # background animation moving
         """
