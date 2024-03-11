@@ -1,108 +1,78 @@
-# main.py
+from kivy.core.audio import SoundLoader
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.uix.button import Button
-from kivy.uix.label import Label
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.core.audio import SoundLoader
-from kivy.properties import NumericProperty, BooleanProperty, ListProperty, ObjectProperty
-from kivy.vector import Vector
-from kivy.uix.image import Image
+from kivy.graphics import Rectangle
+from kivy.core.window import Window
 from kivy.clock import Clock
-import random
 
+def collides(rect1, rect2):
+    r1x = rect1[0][0]
+    r1y = rect1[0][1]
+    r2x = rect2[0][0]
+    r2y = rect2[0][1]
+    r1w = rect1[1][0]
+    r1h = rect1[1][1]
+    r2w = rect2[1][0]
+    r2h = rect2[1][1]
 
-class StartScreen(Screen):
+    if (r1x < r2x + r2w and r1x + r1w > r2x and r1y < r2y + r2h and r1y + r1h > r2y):
+        return True
+    else:
+        return False
+class GameWidget(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        layout = FloatLayout()
-        start_button = Button(text='Start Game', size_hint=(0.2, 0.1), pos_hint={'x': 0.4, 'y': 0.45})
-        start_button.bind(on_press=self.start_game)
-        layout.add_widget(start_button)
-        self.add_widget(layout)
 
-    def start_game(self, instance):
-        self.manager.current = 'game'
-        game_screen = self.manager.get_screen('game')
-        game_screen.start_game()
+        self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
 
+        self._keyboard.bind(on_key_down=self._on_key_down)
+        self._keyboard.bind(on_key_up=self._on_key_up)
 
-class GameScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.game = None
+        self.pressed_keys = set()
+        Clock.schedule_interval(self.move_step, 0)
 
-    def start_game(self):
-        self.game = ChocoboRacingGame()
-        self.add_widget(self.game)
+        with self.canvas:
+            self.hero = Rectangle(pos=(0,0), size=(100,100), source=('cat.png'))
+            self.enemy = Rectangle(pos=(400,400), size=(80,80), source=('enemy.png'))
+    def _on_keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_key_down)
+        self._keyboard.unbind(on_key_up=self._on_key_up)
+        self._keyboard = None
+    
+    def _on_key_down(self, keyboard, keycode, text, modifiers):
+        print('down', text)
+        self.pressed_keys.add(text)
 
-    def on_pre_leave(self, *args):
-        if self.game:
-            self.game.stop_game()
+    def _on_key_up(self, keyboard, keycode):
+        text = keycode[1]
+        print('up', text)
 
+        if text in self.pressed_keys:
+            self.pressed_keys.remove(text)
 
-class Chocobo(Image):
-    velocity = NumericProperty(0)
+    def move_step(self, dt):
+        cur_x = self.hero.pos[0]
+        cur_y = self.hero.pos[1]
 
-    def move(self):
-        self.x += self.velocity
+        step = 200*dt #add step to add velocity #diff with 3.3 because this code can move in all rounder (3d move)
 
+        if 'a' in self.pressed_keys:
+            cur_x -= step
+        if 'd' in self.pressed_keys:
+            cur_x += step
 
-class Obstacle(Widget):
-    pass
+        self.hero.pos = (cur_x, cur_y)
 
-
-class ChocoboRacingGame(Widget):
-    chocobo = ObjectProperty(None)
-    obstacles = ListProperty([])
-    score = NumericProperty(0)
-    game_over = BooleanProperty(False)
-    sound = SoundLoader.load('background_music.mp3')
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.chocobo = Chocobo(source='car.png', size=(100, 50))
-        self.add_widget(self.chocobo)
-        Clock.schedule_interval(self.update, 1.0 / 60.0)
-        self.sound.loop = True
-        self.sound.play()
-
-    def update(self, dt):
-        if not self.game_over:
-            self.chocobo.move()
-            self.score += 1
-            self.generate_obstacles()
-
-            # Check for collisions
-            for obstacle in self.obstacles:
-                if obstacle.collide_widget(self.chocobo):
-                    self.end_game()
-
-    def generate_obstacles(self):
-        if random.randint(1, 100) > 90:
-            obstacle = Obstacle()
-            obstacle.x = self.width
-            obstacle.y = random.randint(0, self.height - obstacle.height)
-            self.add_widget(obstacle)
-            self.obstacles.append(obstacle)
-
-    def end_game(self):
-        self.game_over = True
-        self.sound.stop()
-
-    def stop_game(self):
-        self.sound.stop()
-        Clock.unschedule(self.update)
-
-
-class ChocoboRacingApp(App):
+        if collides((self.hero.pos, self.hero.size),(self.enemy.pos, self.enemy.size)):
+            print('game over!')
+        else:
+            print('not over')
+class MyApp(App):
     def build(self):
-        screen_manager = ScreenManager()
-        screen_manager.add_widget(StartScreen(name='start'))
-        screen_manager.add_widget(GameScreen(name='game'))
-        return screen_manager
-
+        return GameWidget()
 
 if __name__ == '__main__':
-    ChocoboRacingApp().run()
+    app = MyApp()
+    app.run()
+
+
