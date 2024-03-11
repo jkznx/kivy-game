@@ -1,4 +1,12 @@
-from kivy.core.audio import SoundLoader
+from kivy.config import Config
+
+SCREEN_W = 1440;
+SCREEN_H = 800;
+RESIZE_ENABLE=False
+Config.set('graphics', 'resizable', RESIZE_ENABLE)
+Config.set('graphics', 'width', str(SCREEN_W))
+Config.set('graphics', 'height', str(SCREEN_H))
+
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.graphics import Rectangle
@@ -8,6 +16,16 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
+
+SCREEN_CX = SCREEN_W/2;
+SCREEN_CY = SCREEN_H/2;
+
+STATE_INIT = 1;
+STATE_RESTART = 2;
+STATE_PLAY = 3;
+STATE_GAMEOVER = 4;
+
+state = STATE_INIT;
 
 """
 def collides(rect1, rect2):
@@ -116,31 +134,28 @@ class GameWidget(Widget):
             cur_x -= step
         if "d" in self.pressed_keys and cur_x < 650:
             cur_x += step
+            
+        self.hero.pos = (cur_x, cur_y)
+           
         """
         if "a" in self.pressed_keys:
             cur_x -= step
         if "d" in self.pressed_keys:
             cur_x += step
-        """
 
-        self.hero.pos = (cur_x, cur_y)
         #print(self.hero.pos)
 
         # background animation moving
-        """
         self.bg.pos = (self.bg.pos[0] - 1, self.bg.pos[1])
         if self.bg.pos[0] <= -self.height:
             self.bg.pos = (0, self.bg.pos[1])
-        """
-
-        """
         if collides((self.hero.pos, self.hero.size),(self.enemy.pos, self.enemy.size)):
             print('game over!')
         else:
             print('not over')
         """
-
-
+        
+        
 class Chocobo_Racing(App):
     def build(self):
         screen_manager = ScreenManager()
