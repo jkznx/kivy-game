@@ -5,6 +5,7 @@ from kivy.graphics import Rectangle
 from kivy.core.window import Window
 from kivy.clock import Clock
 
+"""
 def collides(rect1, rect2):
     r1x = rect1[0][0]
     r1y = rect1[0][1]
@@ -19,6 +20,7 @@ def collides(rect1, rect2):
         return True
     else:
         return False
+"""
 class GameWidget(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -32,8 +34,9 @@ class GameWidget(Widget):
         Clock.schedule_interval(self.move_step, 0)
 
         with self.canvas:
-            self.hero = Rectangle(pos=(0,0), size=(100,100), source=('cat.png'))
-            self.enemy = Rectangle(pos=(400,400), size=(80,80), source=('enemy.png'))
+            self.bg = Rectangle(source='./images/racing_bg_3.jpg', pos=self.pos, size=self.size)
+            self.hero = Rectangle(pos=(0,0), size=(200,200), source=('./images/car.png'))
+
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
         self._keyboard.unbind(on_key_up=self._on_key_up)
@@ -63,16 +66,18 @@ class GameWidget(Widget):
 
         self.hero.pos = (cur_x, cur_y)
 
+        """
         if collides((self.hero.pos, self.hero.size),(self.enemy.pos, self.enemy.size)):
             print('game over!')
         else:
             print('not over')
-class MyApp(App):
+        """
+class Chocobo_Racing(App):
     def build(self):
         return GameWidget()
 
 if __name__ == '__main__':
-    app = MyApp()
+    app = Chocobo_Racing()
     app.run()
 
 
