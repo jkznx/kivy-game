@@ -66,6 +66,11 @@ class GameWidget(Widget):
 
         self.hero.pos = (cur_x, cur_y)
 
+        #background animation moving
+        self.bg.pos = (self.bg.pos[0] - 1, self.bg.pos[1])
+        if self.bg.pos[0] <= -self.width:
+            self.bg.pos = (0, self.bg.pos[1])
+
         """
         if collides((self.hero.pos, self.hero.size),(self.enemy.pos, self.enemy.size)):
             print('game over!')
