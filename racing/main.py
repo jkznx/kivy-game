@@ -34,7 +34,7 @@ class GameWidget(Widget):
         Clock.schedule_interval(self.move_step, 0)
 
         with self.canvas:
-            self.bg = Rectangle(source='./images/racing_bg_3.jpg', pos=self.pos, size=self.size)
+            self.bg = Rectangle(source='./images/racing_bg_3.png', pos=(0,0), size=(1000,1000))
             self.hero = Rectangle(pos=(0,0), size=(200,200), source=('./images/car.png'))
 
     def _on_keyboard_closed(self):
@@ -67,9 +67,11 @@ class GameWidget(Widget):
         self.hero.pos = (cur_x, cur_y)
 
         #background animation moving
+        """
         self.bg.pos = (self.bg.pos[0] - 1, self.bg.pos[1])
-        if self.bg.pos[0] <= -self.width:
+        if self.bg.pos[0] <= -self.height:
             self.bg.pos = (0, self.bg.pos[1])
+        """
 
         """
         if collides((self.hero.pos, self.hero.size),(self.enemy.pos, self.enemy.size)):
