@@ -31,7 +31,7 @@ class StartScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = FloatLayout()
-        
+
         # Start Background image
         with self.canvas:
             self.bg = Rectangle(
@@ -73,7 +73,7 @@ class GameWidget(Widget):
                 source="./images/racing_bg_3.png", pos=(0, 0), size=(1000, 1000)
             )
             self.hero = Rectangle(
-                pos=(0, 0), size=(200, 200), source=("./images/car.png")
+                pos=(425, 0), size=(200, 200), source=("./images/car.png")
             )
 
     def _on_keyboard_closed(self):
@@ -100,12 +100,19 @@ class GameWidget(Widget):
             200 * dt
         )  # add step to add velocity #diff with 3.3 because this code can move in all rounder (3d move)
 
+        if "a" in self.pressed_keys and cur_x > 250:  # can't move x in range (250,650) ==> street
+            cur_x -= step
+        if "d" in self.pressed_keys and cur_x < 650:
+            cur_x += step
+        """
         if "a" in self.pressed_keys:
             cur_x -= step
         if "d" in self.pressed_keys:
             cur_x += step
+        """
 
         self.hero.pos = (cur_x, cur_y)
+        print(self.hero.pos)
 
         # background animation moving
         """
