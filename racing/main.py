@@ -79,7 +79,7 @@ class GameWidget(Widget):
 
         self.pressed_keys = set()
         Clock.schedule_interval(self.move_step, 0)
-        Clock.schedule_interval(self.spawn_enemy, 10)
+        #Clock.schedule_interval(self.spawn_enemy, 10)
 
         # init enemies
         self.enemies = []
