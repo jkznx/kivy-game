@@ -148,7 +148,16 @@ class GameWidget(Widget):
                 self.remove_widget(enemy)
                 self.enemies.remove(enemy)
         """
-
+        # Detect enemies for Game Over
+        """        
+        for enemy in self.enemies:
+            enemy_widget = enemy.children[0]  # Get the Rectangle widget
+            if (
+                abs(self.hero.pos[0] - enemy_widget.pos[0]) < 200
+                and abs(self.hero.pos[1] - enemy_widget.pos[1]) < 200
+            ):
+                print("Game Over")
+        """
 class Chocobo_Racing(App):
     def build(self):
         screen_manager = ScreenManager()
