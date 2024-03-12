@@ -28,6 +28,7 @@ STATE_GAMEOVER = 4
 
 state = STATE_INIT
 
+
 class StartScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -92,6 +93,13 @@ class GameWidget(Widget):
                 pos=(600, 0), size=(300, 300), source=("./images/car.png")
             )
 
+    def spawn_enemy(self, dt):
+        enemy = Rectangle(
+            pos=(choice([700, 1000]), 0), size=(300, 300), source="./images/car_2.png"
+        )
+        self.enemies.append(enemy)
+        self.add_widget(enemy)
+
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
         self._keyboard.unbind(on_key_up=self._on_key_up)
@@ -119,13 +127,14 @@ class GameWidget(Widget):
 
         self.hero.pos = (cur_x, cur_y)
 
-        enemy_cur_y = self.enemy.pos[1]
-        enemy_step = 300 * dt
+        for enemy in self.enemies:
+            enemy_cur_y = enemy.pos[1]
+            enemy_step = 300 * dt
+            enemy.pos = (enemy.pos[0], enemy_cur_y + enemy_step)
 
-        self.enemy.pos = (self.enemy.pos[0], enemy_cur_y + enemy_step)
-
-        if enemy_cur_y > SCREEN_H:
-            self.enemy.pos = (choice([700, 1000]), 0)
+            if enemy_cur_y > SCREEN_H:
+                self.remove_widget(enemy)
+                self.enemies.remove(enemy)
 
 
 class Chocobo_Racing(App):
