@@ -1,11 +1,11 @@
 from kivy.config import Config
 
-SCREEN_W = 1440;
-SCREEN_H = 800;
-RESIZE_ENABLE=False
-Config.set('graphics', 'resizable', RESIZE_ENABLE)
-Config.set('graphics', 'width', str(SCREEN_W))
-Config.set('graphics', 'height', str(SCREEN_H))
+SCREEN_W = 1440
+SCREEN_H = 800
+RESIZE_ENABLE = False
+Config.set("graphics", "resizable", RESIZE_ENABLE)
+Config.set("graphics", "width", str(SCREEN_W))
+Config.set("graphics", "height", str(SCREEN_H))
 
 from kivy.app import App
 from kivy.uix.widget import Widget
@@ -16,34 +16,17 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
+from random import choice
 
-SCREEN_CX = SCREEN_W/2;
-SCREEN_CY = SCREEN_H/2;
+SCREEN_CX = SCREEN_W / 2
+SCREEN_CY = SCREEN_H / 2
 
-STATE_INIT = 1;
-STATE_RESTART = 2;
-STATE_PLAY = 3;
-STATE_GAMEOVER = 4;
+STATE_INIT = 1
+STATE_RESTART = 2
+STATE_PLAY = 3
+STATE_GAMEOVER = 4
 
-state = STATE_INIT;
-
-"""
-def collides(rect1, rect2):
-    r1x = rect1[0][0]
-    r1y = rect1[0][1]
-    r2x = rect2[0][0]
-    r2y = rect2[0][1]
-    r1w = rect1[1][0]
-    r1h = rect1[1][1]
-    r2w = rect2[1][0]
-    r2h = rect2[1][1]
-
-    if (r1x < r2x + r2w and r1x + r1w > r2x and r1y < r2y + r2h and r1y + r1h > r2y):
-        return True
-    else:
-        return False
-"""
-
+state = STATE_INIT
 
 class StartScreen(Screen):
     def __init__(self, **kwargs):
@@ -53,25 +36,23 @@ class StartScreen(Screen):
         # Start Background image
         with self.canvas:
             self.bg = Rectangle(
-                source="./images/game_start.png", 
-                pos=(0, 0), 
-                size=Window.size
+                source="./images/game_start.png", pos=(0, 0), size=Window.size
             )
         # Game Title
         game_title = Label(
             text="Chocobo Racing",
             font_size="60sp",
             font_name="./fonts/pixel_font.ttf",
-            pos_hint={"center_x": 0.5, "top": 1.35}
+            pos_hint={"center_x": 0.5, "top": 1.35},
         )
 
         # Add start button
         start_button = Button(
-            text="Start Game", 
+            text="Start Game",
             font_name="./fonts/pixel_font.ttf",
-            size_hint=(0.2, 0.1), 
-            pos_hint={"x": 0.4, "y": 0.1}, #start_Btn pos
-            background_color=(0, 0, 0, 1) #black button
+            size_hint=(0.2, 0.1),
+            pos_hint={"x": 0.4, "y": 0.1},  # start_Btn pos
+            background_color=(0, 0, 0, 1),  # black button
         )
         start_button.bind(on_press=self.start_game)
         layout.add_widget(game_title)
@@ -98,12 +79,17 @@ class GameWidget(Widget):
         self.pressed_keys = set()
         Clock.schedule_interval(self.move_step, 0)
 
+        # Initialize the enemy car
+        self.enemy = Rectangle(
+            pos=(choice([700, 1000]), 0), size=(300, 300), source="./images/car_2.png"
+        )
+
         with self.canvas:
             self.bg = Rectangle(
-                source="./images/racing_bg_3.png", pos=(0, 0), size=(1000, 1000)
+                source="./images/racing_bg_3.png", pos=(0, 0), size=Window.size
             )
             self.hero = Rectangle(
-                pos=(425, 0), size=(200, 200), source=("./images/car.png")
+                pos=(600, 0), size=(300, 300), source=("./images/car.png")
             )
 
     def _on_keyboard_closed(self):
@@ -112,12 +98,10 @@ class GameWidget(Widget):
         self._keyboard = None
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
-        #print("down", text)
         self.pressed_keys.add(text)
 
     def _on_key_up(self, keyboard, keycode):
         text = keycode[1]
-        #print("up", text)
 
         if text in self.pressed_keys:
             self.pressed_keys.remove(text)
@@ -126,36 +110,24 @@ class GameWidget(Widget):
         cur_x = self.hero.pos[0]
         cur_y = self.hero.pos[1]
 
-        step = (
-            200 * dt
-        )  # add step to add velocity #diff with 3.3 because this code can move in all rounder (3d move)
+        step = 200 * dt
 
-        if "a" in self.pressed_keys and cur_x > 250:  # can't move x in range (250,650) ==> street
+        if "a" in self.pressed_keys and cur_x > 540:
             cur_x -= step
-        if "d" in self.pressed_keys and cur_x < 650:
+        if "d" in self.pressed_keys and cur_x < 1100:
             cur_x += step
-            
+
         self.hero.pos = (cur_x, cur_y)
-           
-        """
-        if "a" in self.pressed_keys:
-            cur_x -= step
-        if "d" in self.pressed_keys:
-            cur_x += step
 
-        #print(self.hero.pos)
+        enemy_cur_y = self.enemy.pos[1]
+        enemy_step = 300 * dt
 
-        # background animation moving
-        self.bg.pos = (self.bg.pos[0] - 1, self.bg.pos[1])
-        if self.bg.pos[0] <= -self.height:
-            self.bg.pos = (0, self.bg.pos[1])
-        if collides((self.hero.pos, self.hero.size),(self.enemy.pos, self.enemy.size)):
-            print('game over!')
-        else:
-            print('not over')
-        """
-        
-        
+        self.enemy.pos = (self.enemy.pos[0], enemy_cur_y + enemy_step)
+
+        if enemy_cur_y > SCREEN_H:
+            self.enemy.pos = (choice([700, 1000]), 0)
+
+
 class Chocobo_Racing(App):
     def build(self):
         screen_manager = ScreenManager()
