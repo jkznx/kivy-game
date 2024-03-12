@@ -79,27 +79,33 @@ class GameWidget(Widget):
 
         self.pressed_keys = set()
         Clock.schedule_interval(self.move_step, 0)
+        Clock.schedule_interval(self.spawn_enemy, 10)
 
-        # Initialize the enemy car
-        self.enemy = Rectangle(
-            pos=(choice([700, 1000]), 0), size=(300, 300), source="./images/car_2.png"
-        )
+        # init enemies
+        self.enemies = []
 
         with self.canvas:
+            # consider to use draw method to make our racing lanes
             self.bg = Rectangle(
                 source="./images/racing_bg_3.png", pos=(0, 0), size=Window.size
             )
             self.hero = Rectangle(
                 pos=(600, 0), size=(300, 300), source=("./images/car.png")
             )
-
+    # not work error to add_widget
+    # consider new method
+    """
     def spawn_enemy(self, dt):
+        enemy_source = choice(["./images/car_2.png", "./images/car_3.png", "./images/car_4.png"])
+        enemy_pos = choice([(700, 0), (1000, 0)])  # Randomize enemy position
+        enemy_widget = Widget()
         enemy = Rectangle(
-            pos=(choice([700, 1000]), 0), size=(300, 300), source="./images/car_2.png"
+            pos=(0, 0), size=(300, 300), source=enemy_source
         )
-        self.enemies.append(enemy)
-        self.add_widget(enemy)
-
+        enemy_widget.add_widget(enemy)
+        self.enemies.append(enemy_widget)
+        self.add_widget(enemy_widget)
+    """
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
         self._keyboard.unbind(on_key_up=self._on_key_up)
@@ -120,22 +126,28 @@ class GameWidget(Widget):
 
         step = 200 * dt
 
+        # x: 540 max_left
+        # x: 1100 max_right
+
         if "a" in self.pressed_keys and cur_x > 540:
             cur_x -= step
         if "d" in self.pressed_keys and cur_x < 1100:
             cur_x += step
 
         self.hero.pos = (cur_x, cur_y)
-
+        #print(self.hero.pos)
+        
+        """
         for enemy in self.enemies:
-            enemy_cur_y = enemy.pos[1]
+            enemy_widget = enemy.children[0]
+            enemy_cur_y = enemy_widget.pos[1]
             enemy_step = 300 * dt
-            enemy.pos = (enemy.pos[0], enemy_cur_y + enemy_step)
+            enemy_widget.pos = (enemy_widget.pos[0], enemy_cur_y + enemy_step)
 
             if enemy_cur_y > SCREEN_H:
                 self.remove_widget(enemy)
                 self.enemies.remove(enemy)
-
+        """
 
 class Chocobo_Racing(App):
     def build(self):
