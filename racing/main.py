@@ -91,7 +91,7 @@ class GameWidget(Widget):
         self.car = Car()
         self.add_widget(self.car)
         
-        Clock.schedule_interval(self.update_road_position, 1 / 30)
+        Clock.schedule_interval(self.update_road_position, 1 / 60)
         Clock.schedule_interval(self.move_car, 1 / 30)
 
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
@@ -122,8 +122,8 @@ class GameWidget(Widget):
 
         step = self.car_speed * dt
 
-        max_left = Window.width / 2.0 - 300
-        max_right = Window.width / 2.0 + 300
+        max_left = self.width / 2.0 - 300
+        max_right = self.width / 2.0 + 300
 
         if "a" in self.pressed_keys and cur_x > max_left:
             cur_x -= step
@@ -132,7 +132,7 @@ class GameWidget(Widget):
             cur_x += step
             print("d")
 
-        self.car.pos = self.to_widget(cur_x, cur_y)
+        self.car.pos = (cur_x, cur_y)
 
         print(self.car.pos)
 
