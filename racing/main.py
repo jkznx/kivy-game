@@ -8,6 +8,9 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.image import Image
+from kivy.properties import NumericProperty
+
 from random import randint
 
 SCREEN_W = 1440
@@ -27,6 +30,7 @@ sunset_color = (255, 165, 0)
 green_grass = (86, 125, 70)
 black = (0, 0, 0)
 white = (255, 255, 255)
+
 
 class StartScreen(Screen):
     def __init__(self, **kwargs):
@@ -67,15 +71,28 @@ class GameScreen(Screen):
     pass
 
 
+class Car(Image):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.source = "./images/car.png"
+        self.size_hint = (None, None)
+        self.size = (300, 300)  # Adjusted size
+        self.pos = (600, -50)
+    
+
+
 class GameWidget(Widget):
+    car_speed = NumericProperty(200)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.bind(pos=self.draw_my_stuff)
         self.bind(size=self.draw_my_stuff)
-        self.road_pos_y = self.height/2 - 300  # Initial road position
+        self.road_pos_y = self.height / 2 - 300
         self.dash_offset = 0
-        self.draw_my_stuff()
-        Clock.schedule_interval(self.update_road_position, 1 / 60)
+        self.car = Car()
+        self.add_widget(self.car)
+        Clock.schedule_interval(self.update_road_position, 1 / 30)
 
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
@@ -89,11 +106,6 @@ class GameWidget(Widget):
         # draw sky, clouds, sunset, grass, road, and center line
         self.draw_my_stuff()
 
-        # draw hero car
-        self.hero = Rectangle(
-            pos=(600, 0), size=(300, 300), source="./images/car.png"
-        )
-
     def update_road_position(self, dt):
         # Update road position
         self.road_pos_y += 2  # Adjust speed here
@@ -103,6 +115,26 @@ class GameWidget(Widget):
         if self.dash_offset > 120:
             self.dash_offset = 0  # Reset dash offset when it reaches the dash length
         self.draw_my_stuff()
+
+    def move_car(self, dt):
+        cur_x = self.car.center_x
+        cur_y = self.car.y
+
+        step = self.car_speed * dt
+
+        # Limit the movement within the road boundaries
+        max_left = self.width / 2.0 - 200 + self.car.width / 2.0
+        max_right = self.width / 2.0 + 200 - self.car.width / 2.0
+
+        if "a" in self.pressed_keys and cur_x > max_left:
+            cur_x -= step
+            print("a")
+        if "d" in self.pressed_keys and cur_x < max_right:
+            cur_x += step
+            print("d")
+
+        self.car.center_x = cur_x
+        self.car.y = cur_y  # Maintain the vertical position
 
     def draw_my_stuff(self, *args):
         self.canvas.clear()
@@ -164,7 +196,8 @@ class GameWidget(Widget):
             # draw road
             Color(*[component / 255 for component in black])
             Rectangle(
-                pos=(self.width / 2.0 - 200, self.road_pos_y), size=(400, self.height * 0.8)
+                pos=(self.width / 2.0 - 200, self.road_pos_y),
+                size=(400, self.height * 0.8),
             )  # -200 from half of 400 rect make it center
 
             # Draw center line
@@ -176,6 +209,9 @@ class GameWidget(Widget):
                 dash_length=dash_length,
                 dash_offset=self.dash_offset,
             )
+
+        self.car = Car()
+        self.add_widget(self.car)
 
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
@@ -191,21 +227,7 @@ class GameWidget(Widget):
         if text in self.pressed_keys:
             self.pressed_keys.remove(text)
 
-    def move_step(self, dt):
-        cur_x = self.hero.pos[0]
-        cur_y = self.hero.pos[1]
 
-        step = 200 * dt
-
-        # x: 540 max_left
-        # x: 1100 max_right
-
-        if "a" in self.pressed_keys and cur_x > 540:
-            cur_x -= step
-        if "d" in self.pressed_keys and cur_x < 1100:
-            cur_x += step
-
-        self.hero.pos = (cur_x, cur_y)
 
 class Chocobo_Racing(App):
     def build(self):
@@ -219,6 +241,7 @@ class Chocobo_Racing(App):
         game_screen.add_widget(game_widget)
 
         return screen_manager
+
 
 if __name__ == "__main__":
     app = Chocobo_Racing()
