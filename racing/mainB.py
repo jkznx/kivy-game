@@ -45,8 +45,8 @@ class GameWidget(Widget):
     perspective_point_x = NumericProperty(0)
     perspective_point_y = NumericProperty(0)
 
-    V_NB_LINES = 4
-    V_LINES_SPACING = 0.4  # percentage in screen width
+    V_NB_LINES = 6
+    V_LINES_SPACING = 0.2  # percentage in screen width
     vertical_lines = []
 
     H_NB_LINES = 15
@@ -82,8 +82,19 @@ class GameWidget(Widget):
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
-
-        Clock.schedule_interval(self.update, 1.0 / 60.0)
+        with self.canvas.before:
+            self.bg = Rectangle(
+                size=Window.size,
+                source="./images/racing_bg_3.png",
+                pos=(0, 0),
+            )
+            self.pause = Label(
+                text=self.pause_text,
+                font_size="30sp",
+                font_name="./fonts/pixel_font.ttf",
+                pos=(750, 700),
+            )
+        self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     # tile
     def init_tiles(self):
@@ -113,8 +124,6 @@ class GameWidget(Widget):
         last_x = 0
         last_y = 0
 
-        # clean the coordinates that are out of the screen
-        # ti_y < self.current_y_loop
         for i in range(len(self.tiles_coordinates) - 1, -1, -1):
             if self.tiles_coordinates[i][1] < self.current_y_loop:
                 del self.tiles_coordinates[i]
@@ -180,7 +189,7 @@ class GameWidget(Widget):
 
     def update(self, dt):
         # print("dt: " + str(dt*60))
-        time_factor = dt * 60
+        time_factor = dt * 30
         self.update_vertical_lines()
         self.update_horizontal_lines()
         self.update_tiles()
