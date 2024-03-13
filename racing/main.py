@@ -1,7 +1,7 @@
 from kivy.config import Config
 
-SCREEN_W = 764
-SCREEN_H = 640
+SCREEN_W = 900
+SCREEN_H = 400
 RESIZE_ENABLE = False
 
 Config.set("graphics", "resizable", RESIZE_ENABLE)
@@ -46,7 +46,7 @@ class GameWidget(Widget):
     perspective_point_y = NumericProperty(0)
 
     V_NB_LINES = 6
-    V_LINES_SPACING = 0.2  # percentage in screen width
+    V_LINES_SPACING = 0.4  # percentage in screen width
     vertical_lines = []
 
     H_NB_LINES = 15
