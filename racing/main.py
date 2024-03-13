@@ -1,108 +1,225 @@
-# main.py
+from kivy.config import Config
 from kivy.app import App
 from kivy.uix.widget import Widget
+from kivy.graphics import Rectangle, Color, Ellipse, Triangle, Line
+from kivy.core.window import Window
+from kivy.clock import Clock
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.core.audio import SoundLoader
-from kivy.properties import NumericProperty, BooleanProperty, ListProperty, ObjectProperty
-from kivy.vector import Vector
-from kivy.uix.image import Image
-from kivy.clock import Clock
-import random
+from random import randint
 
+SCREEN_W = 1440
+SCREEN_H = 800
+RESIZE_ENABLE = False
+Config.set("graphics", "resizable", RESIZE_ENABLE)
+Config.set("graphics", "width", str(SCREEN_W))
+Config.set("graphics", "height", str(SCREEN_H))
+
+STATE_INIT = 1
+STATE_RESTART = 2
+STATE_PLAY = 3
+STATE_GAMEOVER = 4
+
+blue_sky = (115, 215, 255)
+sunset_color = (255, 165, 0)
+green_grass = (86, 125, 70)
+black = (0, 0, 0)
+white = (255, 255, 255)
 
 class StartScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = FloatLayout()
-        start_button = Button(text='Start Game', size_hint=(0.2, 0.1), pos_hint={'x': 0.4, 'y': 0.45})
+
+        # Start Background image
+        with self.canvas:
+            self.bg = Rectangle(
+                source="./images/game_start.png", pos=(0, 0), size=Window.size
+            )
+        # Game Title
+        game_title = Label(
+            text="Chocobo Racing",
+            font_size="60sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos_hint={"center_x": 0.5, "top": 1.35},
+        )
+
+        # Add start button
+        start_button = Button(
+            text="Start Game",
+            font_name="./fonts/pixel_font.ttf",
+            size_hint=(0.2, 0.1),
+            pos_hint={"x": 0.4, "y": 0.1},  # start_Btn pos
+            background_color=(0, 0, 0, 1),  # black button
+        )
         start_button.bind(on_press=self.start_game)
+        layout.add_widget(game_title)
         layout.add_widget(start_button)
         self.add_widget(layout)
 
     def start_game(self, instance):
-        self.manager.current = 'game'
-        game_screen = self.manager.get_screen('game')
-        game_screen.start_game()
+        self.manager.current = "game"
 
 
 class GameScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.game = None
-
-    def start_game(self):
-        self.game = ChocoboRacingGame()
-        self.add_widget(self.game)
-
-    def on_pre_leave(self, *args):
-        if self.game:
-            self.game.stop_game()
-
-
-class Chocobo(Image):
-    velocity = NumericProperty(0)
-
-    def move(self):
-        self.x += self.velocity
-
-
-class Obstacle(Widget):
     pass
 
 
-class ChocoboRacingGame(Widget):
-    chocobo = ObjectProperty(None)
-    obstacles = ListProperty([])
-    score = NumericProperty(0)
-    game_over = BooleanProperty(False)
-    sound = SoundLoader.load('background_music.mp3')
-
+class GameWidget(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.chocobo = Chocobo(source='car.png', size=(100, 50))
-        self.add_widget(self.chocobo)
-        Clock.schedule_interval(self.update, 1.0 / 60.0)
-        self.sound.loop = True
-        self.sound.play()
+        self.bind(pos=self.draw_my_stuff)
+        self.bind(size=self.draw_my_stuff)
+        self.road_pos_y = self.height/2 - 300  # Initial road position
+        self.dash_offset = 0
+        self.draw_my_stuff()
+        Clock.schedule_interval(self.update_road_position, 1 / 60)
 
-    def update(self, dt):
-        if not self.game_over:
-            self.chocobo.move()
-            self.score += 1
-            self.generate_obstacles()
+        self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
+        self._keyboard.bind(on_key_down=self._on_key_down)
+        self._keyboard.bind(on_key_up=self._on_key_up)
 
-            # Check for collisions
-            for obstacle in self.obstacles:
-                if obstacle.collide_widget(self.chocobo):
-                    self.end_game()
+        self.pressed_keys = set()
 
-    def generate_obstacles(self):
-        if random.randint(1, 100) > 90:
-            obstacle = Obstacle()
-            obstacle.x = self.width
-            obstacle.y = random.randint(0, self.height - obstacle.height)
-            self.add_widget(obstacle)
-            self.obstacles.append(obstacle)
+        # init enemies
+        self.enemies = []
 
-    def end_game(self):
-        self.game_over = True
-        self.sound.stop()
+        # draw sky, clouds, sunset, grass, road, and center line
+        self.draw_my_stuff()
 
-    def stop_game(self):
-        self.sound.stop()
-        Clock.unschedule(self.update)
+        # draw hero car
+        self.hero = Rectangle(
+            pos=(600, 0), size=(300, 300), source="./images/car.png"
+        )
 
+    def update_road_position(self, dt):
+        # Update road position
+        self.road_pos_y += 2  # Adjust speed here
+        if self.road_pos_y > self.height * 0.8 - 900:
+            self.road_pos_y = self.height / 2.0 - 375  # Reset when it moves out of view
+        self.dash_offset += 10  # Adjust speed here for the dash line
+        if self.dash_offset > 120:
+            self.dash_offset = 0  # Reset dash offset when it reaches the dash length
+        self.draw_my_stuff()
 
-class ChocoboRacingApp(App):
+    def draw_my_stuff(self, *args):
+        self.canvas.clear()
+        with self.canvas:
+            # draw sky
+            Color(*[component / 255 for component in blue_sky])
+            Rectangle(pos=(0, 0), size=(self.width, self.height))
+
+            # cloud on sky
+            cloud_group_positions = [
+                (self.width * 0.2, self.height * 0.85),
+                (self.width * 0.5, self.height * 0.88),
+                (self.width * 0.8, self.height * 0.9),
+            ]
+
+            for cloud_pos_x, cloud_pos_y in cloud_group_positions:
+                for _ in range(30):
+                    cloud_size = randint(30, 120)
+                    cloud_color = white
+
+                    Color(*[component / 255 for component in cloud_color])
+                    Ellipse(
+                        pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
+                    )
+                    cloud_pos_x += randint(-30, 30)
+                    cloud_pos_y += randint(-10, 10)
+
+            # add sunset at the center of bottom sky
+            Color(*[component / 255 for component in sunset_color])
+            Ellipse(pos=(self.width / 2 - 75, self.height * 0.7), size=(150, 150))
+
+            # draw grass
+            Color(*[component / 255 for component in green_grass])
+            Rectangle(pos=(0, 0), size=(self.width, self.height * 0.8))
+
+            # pov road bottom triangle
+            Color(*[component / 255 for component in black])
+            Triangle(
+                points=[
+                    0,
+                    0,
+                    self.width / 2,
+                    0,
+                    self.width / 4 + 50,
+                    self.height * 0.8,
+                ]
+            )
+            Triangle(
+                points=[
+                    self.width,
+                    0,
+                    self.width / 2,
+                    0,
+                    self.width * 3 / 4 - 50,
+                    self.height * 0.8,
+                ]
+            )
+
+            # draw road
+            Color(*[component / 255 for component in black])
+            Rectangle(
+                pos=(self.width / 2.0 - 200, self.road_pos_y), size=(400, self.height * 0.8)
+            )  # -200 from half of 400 rect make it center
+
+            # Draw center line
+            Color(1, 1, 1)
+            dash_length = 60
+            gap_length = 300
+            Line(
+                points=[self.width / 2.0, -100, self.width / 2.0, self.height * 0.8],
+                dash_length=dash_length,
+                dash_offset=self.dash_offset,
+            )
+
+    def _on_keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_key_down)
+        self._keyboard.unbind(on_key_up=self._on_key_up)
+        self._keyboard = None
+
+    def _on_key_down(self, keyboard, keycode, text, modifiers):
+        self.pressed_keys.add(text)
+
+    def _on_key_up(self, keyboard, keycode):
+        text = keycode[1]
+
+        if text in self.pressed_keys:
+            self.pressed_keys.remove(text)
+
+    def move_step(self, dt):
+        cur_x = self.hero.pos[0]
+        cur_y = self.hero.pos[1]
+
+        step = 200 * dt
+
+        # x: 540 max_left
+        # x: 1100 max_right
+
+        if "a" in self.pressed_keys and cur_x > 540:
+            cur_x -= step
+        if "d" in self.pressed_keys and cur_x < 1100:
+            cur_x += step
+
+        self.hero.pos = (cur_x, cur_y)
+
+class Chocobo_Racing(App):
     def build(self):
         screen_manager = ScreenManager()
-        screen_manager.add_widget(StartScreen(name='start'))
-        screen_manager.add_widget(GameScreen(name='game'))
+        start_screen = StartScreen(name="start")
+        game_screen = GameScreen(name="game")
+        game_widget = GameWidget()
+
+        screen_manager.add_widget(start_screen)
+        screen_manager.add_widget(game_screen)
+        game_screen.add_widget(game_widget)
+
         return screen_manager
 
-
-if __name__ == '__main__':
-    ChocoboRacingApp().run()
+if __name__ == "__main__":
+    app = Chocobo_Racing()
+    app.run()
