@@ -77,10 +77,8 @@ class Car(Image):
         self.source = "./images/car.png"
         self.size_hint = (None, None)
         self.size = (300, 300)  # Adjusted size
-        self.pos = (600, -50)
+        self.pos = (350, -50) 
     
-
-
 class GameWidget(Widget):
     car_speed = NumericProperty(200)
 
@@ -92,7 +90,9 @@ class GameWidget(Widget):
         self.dash_offset = 0
         self.car = Car()
         self.add_widget(self.car)
+        
         Clock.schedule_interval(self.update_road_position, 1 / 30)
+        Clock.schedule_interval(self.move_car, 1 / 30)
 
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
@@ -117,14 +117,13 @@ class GameWidget(Widget):
         self.draw_my_stuff()
 
     def move_car(self, dt):
-        cur_x = self.car.center_x
+        cur_x = self.car.x
         cur_y = self.car.y
 
         step = self.car_speed * dt
 
-        # Limit the movement within the road boundaries
-        max_left = self.width / 2.0 - 200 + self.car.width / 2.0
-        max_right = self.width / 2.0 + 200 - self.car.width / 2.0
+        max_left = Window.width / 2.0 - 300
+        max_right = Window.width / 2.0 + 300
 
         if "a" in self.pressed_keys and cur_x > max_left:
             cur_x -= step
@@ -133,8 +132,9 @@ class GameWidget(Widget):
             cur_x += step
             print("d")
 
-        self.car.center_x = cur_x
-        self.car.y = cur_y  # Maintain the vertical position
+        self.car.pos = self.to_widget(cur_x, cur_y)
+
+        print(self.car.pos)
 
     def draw_my_stuff(self, *args):
         self.canvas.clear()
