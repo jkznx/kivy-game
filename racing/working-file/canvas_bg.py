@@ -1,6 +1,7 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.graphics import Rectangle, Color, Line, Ellipse, Triangle
+from kivy.clock import Clock
 import random
 
 # colors
@@ -19,6 +20,20 @@ class MyWidget(Widget):
         super(MyWidget, self).__init__(**kwargs)
         self.bind(pos=self.draw_my_stuff)
         self.bind(size=self.draw_my_stuff)
+        self.road_pos_y = self.height/2 - 300  # Initial road position
+        self.dash_offset = 0
+        self.draw_my_stuff()
+        Clock.schedule_interval(self.update_road_position, 1 / 60)
+        
+
+    def update_road_position(self, dt):
+        # Update road position
+        self.road_pos_y += 2  # Adjust speed here
+        if self.road_pos_y > self.height * 0.8 - 900:
+            self.road_pos_y = self.height / 2.0 - 375  # Reset when it moves out of view
+        self.dash_offset += 10  # Adjust speed here for the dash line
+        if self.dash_offset > 120:
+            self.dash_offset = 0  # Reset dash offset when it reaches the dash length
         self.draw_my_stuff()
 
     def draw_my_stuff(self, *args):
@@ -82,17 +97,18 @@ class MyWidget(Widget):
             # draw road
             Color(*[component / 255 for component in black])
             Rectangle(
-                pos=(self.width / 2.0 - 200, 0), size=(400, self.height * 0.8)
+                pos=(self.width / 2.0 - 200, self.road_pos_y), size=(400, self.height * 0.8)
             )  # -200 from half of 400 rect make it center
 
             # Draw center line
             Color(1, 1, 1)
             dash_length = 60
-            gap_length = 50
+            gap_length = 300
             Line(
-                points=[self.width / 2.0, 0, self.width / 2.0, self.height * 0.8],
+                points=[self.width / 2.0, -100, self.width / 2.0, self.height * 0.8],
                 dash_length=dash_length,
-                dash_offset=gap_length,
+                dash_offset=self.dash_offset,
+                #width=2.0,
             )
 
 
