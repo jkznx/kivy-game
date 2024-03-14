@@ -10,7 +10,7 @@ Config.set("graphics", "height", str(SCREEN_H))
 
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.graphics import Rectangle
+from kivy.graphics import Rectangle, Color
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.uix.button import Button
@@ -34,6 +34,12 @@ STATE_RESTART = 2
 STATE_PLAY = 3
 STATE_GAMEOVER = 4
 state = STATE_INIT
+
+blue_sky = (115, 215, 255)
+sunset_color = (255, 165, 0)
+green_grass = (86, 125, 70)
+black = (0, 0, 0)
+white = (255, 255, 255)
 
 
 class StartScreen(Screen):
@@ -130,11 +136,17 @@ class GameWidget(Widget):
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
+        print(self.transform(0, self.height))
         with self.canvas.before:
-            self.bg = Rectangle(
-                size=Window.size,
-                source="./images/racing_bg_3.png",
+            # self.bg = Rectangle(
+            #     size=Window.size,
+            #     source="./images/racing_bg_3.png",
+            #     pos=(0, 0),
+            # )
+            Color(*[component / 255 for component in green_grass])
+            Rectangle(
                 pos=(0, 0),
+                size=(Window.size[0], Window.size[1] * 0.35),
             )
             self.pause = Label(
                 text=self.pause_text,
