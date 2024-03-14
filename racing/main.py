@@ -126,7 +126,7 @@ class GameWidget(Widget):
         self.init_horizontal_lines()
         self.init_floors()
         self.generate_floors_coordinates()
-        self.init_ship()
+        self.init_car()
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
@@ -144,12 +144,12 @@ class GameWidget(Widget):
             )
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
-    def init_ship(self):
+    def init_car(self):
         with self.canvas:
-            self.ship = Car()
+            self.car = Car()
 
-    def update_ship(self):
-        self.ship.pos = [SCREEN_CX, 20]
+    def update_car(self):
+        self.car.pos = [SCREEN_CX, 20]
 
     # tile
     def init_floors(self):
@@ -251,7 +251,7 @@ class GameWidget(Widget):
         self.update_vertical_lines()
         self.update_horizontal_lines()
         self.update_floors()
-        self.update_ship()
+        self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
 
