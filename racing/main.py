@@ -110,7 +110,28 @@ class GameWidget(Widget):
         )
         self.add_widget(self.pause_label)
 
+        self.time_label = Label(
+            text="Time: 0",
+            font_size="20sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos=(20, self.height - 40),  # Adjust position as needed
+            color=(1, 1, 1, 1),  # White color
+        )
+        self.add_widget(self.time_label)
 
+        # Score label
+        self.score = 0
+        self.score_label = Label(
+            text="Score: 0",
+            font_size="20sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos=(self.width - 120, self.height - 40),  # Adjust position as needed
+            color=(1, 1, 1, 1),  # White color
+        )
+        self.add_widget(self.score_label)
+
+
+        Clock.schedule_interval(self.update_time_and_score, 1)
         Clock.schedule_interval(self.update_road_position, 1 / 30)
         Clock.schedule_interval(self.move_car, 1 / 30)
 
@@ -125,6 +146,15 @@ class GameWidget(Widget):
 
         # draw sky, clouds, sunset, grass, road, and center line
         self.draw_my_stuff()
+
+    def update_time_and_score(self, dt):
+        if not self.is_paused:
+            self.time_label.text = f"Time: {int(self.time_label.text.split(': ')[-1]) + 1}"  # Update time
+            self.score += 10  # Increase score by 10 every second
+            if self.score > 9999:
+                self.score = 9999  # Limit score to 9999
+            self.score_label.text = f"Score: {self.score}"  # Update score
+
 
     def update_road_position(self, dt):
         # Update road position
@@ -232,6 +262,27 @@ class GameWidget(Widget):
 
         self.car = Car(self.car.x, self.car.y)
         self.add_widget(self.car)
+
+        # Draw time label
+        self.time_label = Label(
+            text=self.time_label.text,
+            font_size="20sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos=(20, self.height/2 - 40),
+            color=(1, 1, 1, 1),  # White color
+        )
+        self.add_widget(self.time_label)
+
+        # Draw score label
+        self.score_label = Label(
+            text=self.score_label.text,
+            font_size="20sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos=(self.width - 120, self.height/2 - 40),
+            color=(1, 1, 1, 1),  # White color
+        )
+        self.add_widget(self.score_label)
+
         
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
