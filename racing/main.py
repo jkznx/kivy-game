@@ -9,14 +9,19 @@ from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.image import Image
+from kivy.uix.progressbar import ProgressBar
 from kivy.properties import NumericProperty
 
 from random import randint
 
+# Fixed screen size
 SCREEN_W = 1440
 SCREEN_H = 800
-RESIZE_ENABLE = False
-Config.set("graphics", "resizable", RESIZE_ENABLE)
+
+# Disable resizing
+Config.set("graphics", "resizable", False)
+
+# Set fixed window size
 Config.set("graphics", "width", str(SCREEN_W))
 Config.set("graphics", "height", str(SCREEN_H))
 
@@ -103,6 +108,17 @@ class GameWidget(Widget):
             opacity=0,  # Initially hidden
         )
         self.add_widget(self.pause_label)
+
+        # Car speed progress bar
+        self.speed_bar = ProgressBar(
+            max=400,  # Maximum speed
+            value=self.car_speed,  # Initial speed
+            size_hint=(None, None),
+            width=300,
+            height=20,
+            pos=(self.width - 350, 20),  # Position on bottom right
+        )
+        self.add_widget(self.speed_bar)
 
         Clock.schedule_interval(self.update_road_position, 1 / 30)
         Clock.schedule_interval(self.move_car, 1 / 30)
@@ -215,8 +231,8 @@ class GameWidget(Widget):
 
             # Draw center line
             Color(1, 1, 1)
-            dash_length = 300
-            gap_length = 200
+            dash_length = 100
+            gap_length = 300
             Line(
                 points=[self.width / 2.0, -100, self.width / 2.0, self.height * 0.8],
                 dash_length=dash_length,
