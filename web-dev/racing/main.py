@@ -11,7 +11,6 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.image import Image
 from kivy.uix.progressbar import ProgressBar
 from kivy.properties import NumericProperty
-
 from random import randint
 
 # Fixed screen size
@@ -29,12 +28,6 @@ STATE_INIT = 1
 STATE_RESTART = 2
 STATE_PLAY = 3
 STATE_GAMEOVER = 4
-
-blue_sky = (115, 215, 255)
-sunset_color = (255, 165, 0)
-green_grass = (86, 125, 70)
-black = (0, 0, 0)
-white = (255, 255, 255)
 
 
 class StartScreen(Screen):
@@ -77,12 +70,7 @@ class GameScreen(Screen):
 
 
 class Car(Image):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.source = "./images/car.png"
-        self.size_hint = (None, None)
-        self.size = (300, 300)  # Adjusted size
-        self.pos = (350, -50)
+    pass
 
 
 class GameWidget(Widget):
@@ -120,7 +108,6 @@ class GameWidget(Widget):
         )
         self.add_widget(self.speed_bar)
 
-        Clock.schedule_interval(self.update_road_position, 1 / 30)
         Clock.schedule_interval(self.move_car, 1 / 30)
 
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
@@ -129,116 +116,26 @@ class GameWidget(Widget):
 
         self.pressed_keys = set()
 
-        # init enemies
-        self.enemies = []
-
-        # draw sky, clouds, sunset, grass, road, and center line
-        self.draw_my_stuff()
-
-    def update_road_position(self, dt):
-        # Update road position
-        self.road_pos_y += 2  # Adjust speed here
-        if self.road_pos_y > self.height * 0.8 - 900:
-            self.road_pos_y = self.height / 2.0 - 375  # Reset when it moves out of view
-        self.dash_offset += 10  # Adjust speed here for the dash line
-        if self.dash_offset > 120:
-            self.dash_offset = 0  # Reset dash offset when it reaches the dash length
-        self.draw_my_stuff()
-
     def move_car(self, dt):
         step = self.car_speed * dt
 
-        # Calculate the new road position based on the car's movement
+        # Calculate the new car position based on the keys pressed
         max_left = self.width / 2.0 - 500
         max_right = self.width / 2.0 + 500
+
+        # Move the car to the left
         if "a" in self.pressed_keys and self.car.x > max_left:
-            self.road_pos_y += step
+            self.car.x -= step
+
+        # Move the car to the right
         if "d" in self.pressed_keys and self.car.x < max_right:
-            self.road_pos_y -= step
+            self.car.x += step
 
-        # Ensure the road stays within bounds
-        self.road_pos_y = max(self.height / 2.0 - 375, min(self.road_pos_y, self.height * 0.8 - 900))
-
-        self.draw_my_stuff()
-
-        print(self.car.pos)
+        # Ensure the car stays within bounds
+        self.car.x = max(max_left, min(self.car.x, max_right))
 
     def draw_my_stuff(self, *args):
-        self.canvas.clear()
-        with self.canvas:
-            # draw sky
-            Color(*[component / 255 for component in blue_sky])
-            Rectangle(pos=(0, 0), size=(self.width, self.height))
-
-            # cloud on sky
-            cloud_group_positions = [
-                (self.width * 0.2, self.height * 0.85),
-                (self.width * 0.5, self.height * 0.88),
-                (self.width * 0.8, self.height * 0.9),
-            ]
-
-            for cloud_pos_x, cloud_pos_y in cloud_group_positions:
-                for _ in range(30):
-                    cloud_size = randint(30, 120)
-                    cloud_color = white
-
-                    Color(*[component / 255 for component in cloud_color])
-                    Ellipse(
-                        pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
-                    )
-                    cloud_pos_x += randint(-30, 30)
-                    cloud_pos_y += randint(-10, 10)
-
-            # add sunset at the center of bottom sky
-            Color(*[component / 255 for component in sunset_color])
-            Ellipse(pos=(self.width / 2 - 75, self.height * 0.7), size=(150, 150))
-
-            # draw grass
-            Color(*[component / 255 for component in green_grass])
-            Rectangle(pos=(0, 0), size=(self.width, self.height * 0.8))
-
-            # pov road bottom triangle
-            Color(*[component / 255 for component in black])
-            Triangle(
-                points=[
-                    0,
-                    0,
-                    self.width / 2,
-                    0,
-                    self.width / 4 + 50,
-                    self.height * 0.8,
-                ]
-            )
-            Triangle(
-                points=[
-                    self.width,
-                    0,
-                    self.width / 2,
-                    0,
-                    self.width * 3 / 4 - 50,
-                    self.height * 0.8,
-                ]
-            )
-
-            # draw road
-            Color(*[component / 255 for component in black])
-            Rectangle(
-                pos=(self.width / 2.0 - 200, self.road_pos_y),
-                size=(400, self.height * 0.8),
-            )  # -200 from half of 400 rect make it center
-
-            # Draw center line
-            Color(1, 1, 1)
-            dash_length = 100
-            gap_length = 300
-            Line(
-                points=[self.width / 2.0, -100, self.width / 2.0, self.height * 0.8],
-                dash_length=dash_length,
-                dash_offset=self.dash_offset,
-            )
-
-        self.car = Car()
-        self.add_widget(self.car)
+        pass
 
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
@@ -254,12 +151,8 @@ class GameWidget(Widget):
     def toggle_pause(self):
         self.is_paused = not self.is_paused
         if self.is_paused:
-            Clock.unschedule(self.update_road_position)
-            Clock.unschedule(self.move_car)
             self.pause_label.opacity = 1
         else:
-            Clock.schedule_interval(self.update_road_position, 1 / 30)
-            Clock.schedule_interval(self.move_car, 1 / 30)
             self.pause_label.opacity = 0
 
     def _on_key_up(self, keyboard, keycode):
