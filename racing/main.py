@@ -169,7 +169,8 @@ class GameWidget(Widget):
             # Ellipse(
             #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
             # )
-            # # draw grass
+            
+            # draw grass
             Color(*[component / 255 for component in green_grass])
             Rectangle(
                 pos=(0, 0),
@@ -179,7 +180,7 @@ class GameWidget(Widget):
                 text=self.pause_text,
                 font_size="30sp",
                 font_name="./fonts/pixel_font.ttf",
-                pos=(750, 700),
+                pos=(600, 600),
             )
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
