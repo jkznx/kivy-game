@@ -77,12 +77,12 @@ class GameScreen(Screen):
 
 
 class Car(Image):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, x=350, y=0):
+        super().__init__()
         self.source = "./images/car.png"
         self.size_hint = (None, None)
         self.size = (300, 300)  # Adjusted size
-        self.pos = (350, -50)
+        self.pos = (x, y)
 
 
 class GameWidget(Widget):
@@ -97,6 +97,7 @@ class GameWidget(Widget):
         self.dash_offset = 0
         self.car = Car()
         self.add_widget(self.car)
+        
 
         # Pause label
         self.pause_label = Label(
@@ -109,16 +110,6 @@ class GameWidget(Widget):
         )
         self.add_widget(self.pause_label)
 
-        # Car speed progress bar
-        self.speed_bar = ProgressBar(
-            max=400,  # Maximum speed
-            value=self.car_speed,  # Initial speed
-            size_hint=(None, None),
-            width=300,
-            height=20,
-            pos=(self.width - 350, 20),  # Position on bottom right
-        )
-        self.add_widget(self.speed_bar)
 
         Clock.schedule_interval(self.update_road_position, 1 / 30)
         Clock.schedule_interval(self.move_car, 1 / 30)
@@ -142,7 +133,7 @@ class GameWidget(Widget):
             self.road_pos_y = self.height / 2.0 - 375  # Reset when it moves out of view
         self.dash_offset += 10  # Adjust speed here for the dash line
         if self.dash_offset > 120:
-            self.dash_offset = 0  # Reset dash offset when it reaches the dash length
+            self.dash_offset =  60 # Reset dash offset when it reaches the dash length
         self.draw_my_stuff()
 
     def move_car(self, dt):
@@ -151,8 +142,8 @@ class GameWidget(Widget):
 
         step = self.car_speed * dt
 
-        max_left = self.width / 2.0 - 500
-        max_right = self.width / 2.0 + 500
+        max_left = 350 - 300
+        max_right = 350 + 300
 
         if "a" in self.pressed_keys and cur_x > max_left:
             cur_x -= step
@@ -239,9 +230,9 @@ class GameWidget(Widget):
                 dash_offset=self.dash_offset,
             )
 
-        self.car = Car()
+        self.car = Car(self.car.x, self.car.y)
         self.add_widget(self.car)
-
+        
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
         self._keyboard.unbind(on_key_up=self._on_key_up)
