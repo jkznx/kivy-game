@@ -77,10 +77,12 @@ class Car(Image):
         self.source = "./images/car.png"
         self.size_hint = (None, None)
         self.size = (300, 300)  # Adjusted size
-        self.pos = (350, -50) 
-    
+        self.pos = (350, -50)
+
+
 class GameWidget(Widget):
     car_speed = NumericProperty(200)
+    is_paused = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -90,8 +92,19 @@ class GameWidget(Widget):
         self.dash_offset = 0
         self.car = Car()
         self.add_widget(self.car)
-        
-        Clock.schedule_interval(self.update_road_position, 1 / 60)
+
+        # Pause label
+        self.pause_label = Label(
+            text="Paused",
+            font_size="50sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos=(self.width / 2, self.height / 2),
+            color=(1, 1, 1, 1),  # White color
+            opacity=0,  # Initially hidden
+        )
+        self.add_widget(self.pause_label)
+
+        Clock.schedule_interval(self.update_road_position, 1 / 30)
         Clock.schedule_interval(self.move_car, 1 / 30)
 
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
@@ -122,8 +135,8 @@ class GameWidget(Widget):
 
         step = self.car_speed * dt
 
-        max_left = self.width / 2.0 - 300
-        max_right = self.width / 2.0 + 300
+        max_left = self.width / 2.0 - 500
+        max_right = self.width / 2.0 + 500
 
         if "a" in self.pressed_keys and cur_x > max_left:
             cur_x -= step
@@ -202,8 +215,8 @@ class GameWidget(Widget):
 
             # Draw center line
             Color(1, 1, 1)
-            dash_length = 60
-            gap_length = 300
+            dash_length = 300
+            gap_length = 200
             Line(
                 points=[self.width / 2.0, -100, self.width / 2.0, self.height * 0.8],
                 dash_length=dash_length,
@@ -219,14 +232,27 @@ class GameWidget(Widget):
         self._keyboard = None
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
-        self.pressed_keys.add(text)
+        if text == "p":
+            self.toggle_pause()
+        else:
+            self.pressed_keys.add(text)
+
+    def toggle_pause(self):
+        self.is_paused = not self.is_paused
+        if self.is_paused:
+            Clock.unschedule(self.update_road_position)
+            Clock.unschedule(self.move_car)
+            self.pause_label.opacity = 1
+        else:
+            Clock.schedule_interval(self.update_road_position, 1 / 30)
+            Clock.schedule_interval(self.move_car, 1 / 30)
+            self.pause_label.opacity = 0
 
     def _on_key_up(self, keyboard, keycode):
         text = keycode[1]
 
         if text in self.pressed_keys:
             self.pressed_keys.remove(text)
-
 
 
 class Chocobo_Racing(App):
