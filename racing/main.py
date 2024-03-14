@@ -10,7 +10,7 @@ Config.set("graphics", "height", str(SCREEN_H))
 
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.graphics import Rectangle, Color
+from kivy.graphics import Rectangle, Color, Ellipse
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.uix.button import Button
@@ -21,8 +21,7 @@ from kivy.graphics import Line, Quad, Triangle
 from kivy.properties import NumericProperty
 from kivy.core.image import Image as Im
 from kivy.uix.image import Image
-
-import random
+from random import randint
 
 texture = Im("./images/road.jpg").texture
 SCREEN_CX = SCREEN_W / 2
@@ -136,17 +135,45 @@ class GameWidget(Widget):
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
-        print(self.transform(0, self.height))
         with self.canvas.before:
             # self.bg = Rectangle(
             #     size=Window.size,
             #     source="./images/racing_bg_3.png",
             #     pos=(0, 0),
             # )
+            # draw sky
+            Color(*[component / 255 for component in blue_sky])
+            Rectangle(pos=(0, 0), size=(Window.size))
+
+            # cloud on sky
+            cloud_group_positions = [
+                (Window.size[0] * 0.2, Window.size[1] * 0.85),
+                (Window.size[0] * 0.5, Window.size[1] * 0.88),
+                (Window.size[0] * 0.8, Window.size[1] * 0.9),
+            ]
+
+            for cloud_pos_x, cloud_pos_y in cloud_group_positions:
+                for _ in range(30):
+                    cloud_size = randint(30, 120)
+                    cloud_color = white
+
+                    Color(*[component / 255 for component in cloud_color])
+                    self.clound = Ellipse(
+                        pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
+                    )
+                    cloud_pos_x += randint(-30, 30)
+                    cloud_pos_y += randint(-10, 10)
+
+            # add sunset at the center of bottom sky
+            # Color(*[component / 255 for component in sunset_color])
+            # Ellipse(
+            #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
+            # )
+            # # draw grass
             Color(*[component / 255 for component in green_grass])
             Rectangle(
                 pos=(0, 0),
-                size=(Window.size[0], Window.size[1] * 0.35),
+                size=(Window.size[0], Window.size[1] * 0.35 + 3),
             )
             self.pause = Label(
                 text=self.pause_text,
@@ -161,7 +188,7 @@ class GameWidget(Widget):
             self.car = Car()
 
     def update_car(self):
-        self.car.pos = [SCREEN_CX, 20]
+        self.car.pos = [SCREEN_CX, 6]
 
     # tile
     def init_floors(self):
@@ -255,7 +282,7 @@ class GameWidget(Widget):
             self.horizontal_lines[i].points = [x1, y1, x2, y2]
 
     def update(self, dt):
-        # print("dt: " + str(dt*60))
+
         global state
         if state == STATE_INIT:
             return
