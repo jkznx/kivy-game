@@ -19,10 +19,12 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.graphics import Line, Quad, Triangle
 from kivy.properties import NumericProperty
-from kivy.core.image import Image
+from kivy.core.image import Image as Im
+from kivy.uix.image import Image
+
 import random
 
-texture = Image("./images/road.jpg").texture
+texture = Im("./images/road.jpg").texture
 SCREEN_CX = SCREEN_W / 2
 SCREEN_CY = SCREEN_H / 2
 
@@ -75,9 +77,10 @@ class GameScreen(Screen):
     pass
 
 
-class Car(Rectangle):
+class Car(Image):
     def __init__(self, **kwargs):
-        super(Rectangle).__init__(**kwargs)
+        super().__init__(**kwargs)
+        self.source = "./images/car.png"
         self.size = (300, 300)  # Adjusted size
 
 
@@ -113,9 +116,6 @@ class GameWidget(Widget):
     floors = []
     floors_coordinates = []
 
-    CAR_WIDTH = 0.1
-    CAR_HEIGHT = 0.035
-    CAR_BASE_Y = 0.04
     car = None
     car_coordinates = [(0, 0), (0, 0), (0, 0)]
 
@@ -146,7 +146,7 @@ class GameWidget(Widget):
 
     def init_ship(self):
         with self.canvas:
-            self.ship = Rectangle(source="images/car.png", size=(300, 300))
+            self.ship = Car()
 
     def update_ship(self):
         self.ship.pos = [SCREEN_CX, 20]
