@@ -27,12 +27,26 @@ texture = Im("./images/road.jpg").texture
 SCREEN_CX = SCREEN_W / 2
 SCREEN_CY = SCREEN_H / 2
 
-# state game
+# STATE game
 STATE_INIT = 1
-STATE_RESTART = 2
-STATE_PLAY = 3
+STATE_PLAY = 2
+STATE_RESTART = 3
 STATE_GAMEOVER = 4
-state = STATE_INIT
+
+STATE_CURRENT = STATE_INIT
+
+
+def switch_screen():
+    global STATE_CURRENT
+    if STATE_CURRENT == STATE_INIT:
+        screen_manager.current = "start"
+    if STATE_CURRENT == STATE_PLAY:
+        screen_manager.current = "play"
+    if STATE_CURRENT == STATE_RESTART:
+        screen_manager.current = "stop"
+    if STATE_CURRENT == STATE_GAMEOVER:
+        screen_manager.current = "over"
+
 
 blue_sky = (115, 215, 255)
 sunset_color = (255, 165, 0)
@@ -73,12 +87,20 @@ class StartScreen(Screen):
         self.add_widget(layout)
 
     def start_game(self, instance):
-        global state
-        state = STATE_PLAY
-        self.manager.current = "play"
+        global STATE_CURRENT
+        STATE_CURRENT = STATE_PLAY
+        switch_screen()
 
 
 class GameScreen(Screen):
+    pass
+
+
+class StopScreen(Screen):
+    pass
+
+
+class OverScreen(Screen):
     pass
 
 
@@ -91,7 +113,7 @@ class Car(Image):
 
 class GameWidget(Widget):
     # keyboard input
-    from user_actions import _on_key_down, _on_key_up, _on_keyboard_closed
+    # from user_actions import _on_key_down, _on_key_up, _on_keyboard_closed
 
     # view
     from tranforms import transform, transform_2D, transform_perspective
@@ -169,7 +191,7 @@ class GameWidget(Widget):
             # Ellipse(
             #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
             # )
-            
+
             # draw grass
             Color(*[component / 255 for component in green_grass])
             Rectangle(
@@ -184,6 +206,35 @@ class GameWidget(Widget):
             )
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
+    # keyboard
+    def _on_keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_key_down)
+        self._keyboard.unbind(on_key_up=self._on_key_up)
+        self._keyboard = None
+
+    def _on_key_down(self, keyboard, keycode, text, modifiers):
+        if "a" in keycode[1]:
+            self.current_direction_car = self.CAR_MOVE_SPEED
+        elif "d" in keycode[1]:
+            self.current_direction_car = -self.CAR_MOVE_SPEED
+        elif "p" in keycode[1]:
+            global STATE_CURRENT
+            if STATE_CURRENT == STATE_RESTART:
+                self.pause_text = "p for pause"
+                STATE_CURRENT = STATE_PLAY
+                switch_screen()
+                self.game_running = Clock.schedule_interval(self.update, 1 / 30)
+            elif STATE_CURRENT == STATE_PLAY:
+                self.pause_text = "p for resume"
+                STATE_CURRENT = STATE_RESTART
+                switch_screen()
+                Clock.unschedule(self.game_running)
+            print("stop", self.pause_text)
+
+    def _on_key_up(self, keyboard, keycode):
+        self.current_direction_car = 0
+
+    # car
     def init_car(self):
         with self.canvas:
             self.car = Car()
@@ -191,23 +242,33 @@ class GameWidget(Widget):
     def update_car(self):
         self.car.pos = [SCREEN_CX, 6]
 
+    # get line x
+    # |     /\    |         \
+    # |   /   \  |           \
+    # |_/______\_| Ex.in 3D   \ <-
+    def get_line_x_from_index(self, index):
+
+        central_line_x = self.perspective_point_x
+        spacing = self.V_LINES_SPACING * self.width
+        offset = index - 0.5
+        line_x = central_line_x + (offset * spacing) + self.current_offset_x
+        print(index, line_x)
+        return line_x
+
+    # get line y
+    # |     /_\    |
+    # |   /____\  |
+    # |_/_______\_|     ____ <-
+    def get_line_y_from_index(self, index):
+        spacing_y = self.H_LINES_SPACING * self.height
+        line_y = (index * spacing_y) - self.current_offset_y
+        return line_y
+
     # tile
     def init_floors(self):
         with self.canvas:
             for i in range(0, self.number_segment):
                 self.floors.append(Quad(texture=texture))
-
-    def get_line_x_from_index(self, index):
-        central_line_x = self.perspective_point_x
-        spacing = self.V_LINES_SPACING * self.width
-        offset = index - 0.5
-        line_x = central_line_x + offset * spacing + self.current_offset_x
-        return line_x
-
-    def get_line_y_from_index(self, index):
-        spacing_y = self.H_LINES_SPACING * self.height
-        line_y = index * spacing_y - self.current_offset_y
-        return line_y
 
     def get_tile_coordinates(self, ti_x, ti_y):
         ti_y = ti_y - self.current_y_loop
@@ -282,10 +343,9 @@ class GameWidget(Widget):
             x2, y2 = self.transform(xmax, line_y)
             self.horizontal_lines[i].points = [x1, y1, x2, y2]
 
+    # main update
     def update(self, dt):
-
-        global state
-        if state == STATE_INIT:
+        if STATE_CURRENT == STATE_INIT:
             return
         time_factor = dt * 30
         self.update_vertical_lines()
@@ -303,21 +363,29 @@ class GameWidget(Widget):
             print("loop : " + str(self.current_y_loop))
 
         speed_x = self.current_direction_car * self.width / 100
+        # print(self.current_offset_x, speed_x)
         self.current_offset_x += speed_x * time_factor
 
 
 class Chocobo_RacingApp(App):
     def build(self):
+        global screen_manager
         screen_manager = ScreenManager()
         start_screen = StartScreen(name="start")
         game_screen = GameScreen(name="play")
+        stop_screen = StopScreen(name="stop")
+        over_screen = OverScreen(name="over")
+
         game_widget = GameWidget()
+        game_screen.add_widget(game_widget)
 
         screen_manager.add_widget(start_screen)
         screen_manager.add_widget(game_screen)
-        game_screen.add_widget(game_widget)
+        screen_manager.add_widget(stop_screen)
+        screen_manager.add_widget(over_screen)
 
         return screen_manager
 
 
-Chocobo_RacingApp().run()
+if __name__ == "__main__":
+    Chocobo_RacingApp().run()
