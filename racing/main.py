@@ -252,7 +252,6 @@ class GameWidget(Widget):
         spacing = self.V_LINES_SPACING * self.width
         offset = index - 0.5
         line_x = central_line_x + (offset * spacing) + self.current_offset_x
-        print(index, line_x)
         return line_x
 
     # get line y
@@ -264,22 +263,23 @@ class GameWidget(Widget):
         line_y = (index * spacing_y) - self.current_offset_y
         return line_y
 
-    # tile
+    # floor
     def init_floors(self):
         with self.canvas:
             for i in range(0, self.number_segment):
                 self.floors.append(Quad(texture=texture))
 
-    def get_tile_coordinates(self, ti_x, ti_y):
-        ti_y = ti_y - self.current_y_loop
-        x = self.get_line_x_from_index(ti_x)
-        y = self.get_line_y_from_index(ti_y)
+    def get_floor_coordinates(self, fl_x, fl_y):
+        fl_y = fl_y - self.current_y_loop
+        x = self.get_line_x_from_index(fl_x)
+        y = self.get_line_y_from_index(fl_y)
         return x, y
 
     def generate_floors_coordinates(self):
         last_x = 0
         last_y = 0
 
+        # del floor that out of screen
         for i in range(len(self.floors_coordinates) - 1, -1, -1):
             if self.floors_coordinates[i][1] < self.current_y_loop:
                 del self.floors_coordinates[i]
@@ -288,6 +288,7 @@ class GameWidget(Widget):
             last_coordinates = self.floors_coordinates[-1]
             last_y = last_coordinates[1] + 1
 
+        #
         for i in range(len(self.floors_coordinates), self.number_segment):
             self.floors_coordinates.append((0, last_y))
             last_y += 1
@@ -296,18 +297,24 @@ class GameWidget(Widget):
         start_index = -int(self.V_NB_LINES / 2) + 1
 
         for i in range(0, self.number_segment):
-            tile = self.floors[i]
-            tile_coordinates = self.floors_coordinates[i]
-            xmin, ymin = self.get_tile_coordinates(start_index, tile_coordinates[1])
-            xmax, ymax = self.get_tile_coordinates(
-                start_index + self.V_NB_LINES - 1, tile_coordinates[1] + 1
+            floor = self.floors[i]
+            floor_coordinates = self.floors_coordinates[i]
+            xmin, ymin = self.get_floor_coordinates(
+                floor_coordinates[0], floor_coordinates[1]
             )
+            xmax, ymax = self.get_floor_coordinates(
+                floor_coordinates[0] + 1, floor_coordinates[1] + 1
+            )
+            # xmin, ymin = self.get_floor_coordinates(start_index, floor_coordinates[1])
+            # xmax, ymax = self.get_floor_coordinates(
+            #     start_index + self.V_NB_LINES - 1, floor_coordinates[1] + 1
+            # )
             x1, y1 = self.transform(xmin, ymin)
             x2, y2 = self.transform(xmin, ymax)
             x3, y3 = self.transform(xmax, ymax)
             x4, y4 = self.transform(xmax, ymin)
 
-            tile.points = [x1, y1, x2, y2, x3, y3, x4, y4]
+            floor.points = [x1, y1, x2, y2, x3, y3, x4, y4]
 
     # line
     def init_vertical_lines(self):
