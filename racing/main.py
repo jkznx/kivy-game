@@ -2,7 +2,7 @@ from kivy.config import Config
 
 SCREEN_W = 1000
 SCREEN_H = 700
-RESIZE_ENABLE = False
+RESIZE_ENABLE = True
 
 Config.set("graphics", "resizable", RESIZE_ENABLE)
 Config.set("graphics", "width", str(SCREEN_W))
@@ -21,9 +21,9 @@ from kivy.graphics import Line, Quad, Triangle
 from kivy.properties import NumericProperty
 from kivy.core.image import Image as Im
 from kivy.uix.image import Image
-from random import randint
+from random import randint, randrange
+import math
 
-texture = Im("./images/road.jpg").texture
 SCREEN_CX = SCREEN_W / 2
 SCREEN_CY = SCREEN_H / 2
 
@@ -107,8 +107,9 @@ class OverScreen(Screen):
 class Car(Image):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.source = "./images/car.png"
-        self.size = (300, 300)  # Adjusted size
+        # self.source = "./images/car.png"
+        self.color = [0, 0, 1]
+        self.size = (100, 100)  # Adjusted size
 
 
 class GameWidget(Widget):
@@ -131,7 +132,7 @@ class GameWidget(Widget):
     H_LINES_SPACING = 0.1  # percentage in screen height
     horizontal_lines = []
 
-    DRIVING_SPEED = 1.2
+    DRIVING_SPEED = 1.0
     current_offset_y = 0
     current_y_loop = 0
 
@@ -144,19 +145,56 @@ class GameWidget(Widget):
     floors_coordinates = []
 
     car = None
-    car_coordinates = [(0, 0), (0, 0), (0, 0)]
+
+    number_enemy = 10
+    enemys = []
+    enemys_coordinates = []
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.init_background()
         self.init_vertical_lines()
         self.init_horizontal_lines()
         self.init_floors()
         self.generate_floors_coordinates()
+        self.init_enemys()
         self.init_car()
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
+        self.game_running = Clock.schedule_interval(self.update, 1 / 30)
+
+    # keyboard
+    def _on_keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_key_down)
+        self._keyboard.unbind(on_key_up=self._on_key_up)
+        self._keyboard = None
+
+    def _on_key_down(self, keyboard, keycode, text, modifiers):
+        if "a" in keycode[1]:
+            self.current_direction_car = self.CAR_MOVE_SPEED
+        elif "d" in keycode[1]:
+            self.current_direction_car = -self.CAR_MOVE_SPEED
+        elif "p" in keycode[1]:
+            global STATE_CURRENT
+            if STATE_CURRENT == STATE_RESTART:
+                self.pause_text = "p for pause"
+                STATE_CURRENT = STATE_PLAY
+                # switch_screen()
+                self.game_running = Clock.schedule_interval(self.update, 1 / 30)
+            elif STATE_CURRENT == STATE_PLAY:
+                self.pause_text = "p for resume"
+                STATE_CURRENT = STATE_RESTART
+                # switch_screen()
+                Clock.unschedule(self.game_running)
+            print("stop", self.pause_text)
+
+    def _on_key_up(self, keyboard, keycode):
+        self.current_direction_car = 0
+
+    # background
+    def init_background(self):
         with self.canvas.before:
             # self.bg = Rectangle(
             #     size=Window.size,
@@ -165,7 +203,7 @@ class GameWidget(Widget):
             # )
             # draw sky
             Color(*[component / 255 for component in blue_sky])
-            Rectangle(pos=(0, 0), size=(Window.size))
+            self.sky = Rectangle(pos=(0, 0), size=(Window.size))
 
             # cloud on sky
             cloud_group_positions = [
@@ -204,35 +242,10 @@ class GameWidget(Widget):
                 font_name="./fonts/pixel_font.ttf",
                 pos=(600, 600),
             )
-        self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
-    # keyboard
-    def _on_keyboard_closed(self):
-        self._keyboard.unbind(on_key_down=self._on_key_down)
-        self._keyboard.unbind(on_key_up=self._on_key_up)
-        self._keyboard = None
-
-    def _on_key_down(self, keyboard, keycode, text, modifiers):
-        if "a" in keycode[1]:
-            self.current_direction_car = self.CAR_MOVE_SPEED
-        elif "d" in keycode[1]:
-            self.current_direction_car = -self.CAR_MOVE_SPEED
-        elif "p" in keycode[1]:
-            global STATE_CURRENT
-            if STATE_CURRENT == STATE_RESTART:
-                self.pause_text = "p for pause"
-                STATE_CURRENT = STATE_PLAY
-                switch_screen()
-                self.game_running = Clock.schedule_interval(self.update, 1 / 30)
-            elif STATE_CURRENT == STATE_PLAY:
-                self.pause_text = "p for resume"
-                STATE_CURRENT = STATE_RESTART
-                switch_screen()
-                Clock.unschedule(self.game_running)
-            print("stop", self.pause_text)
-
-    def _on_key_up(self, keyboard, keycode):
-        self.current_direction_car = 0
+    def update_background(self):
+        # some update
+        ...
 
     # car
     def init_car(self):
@@ -242,7 +255,7 @@ class GameWidget(Widget):
     def update_car(self):
         self.car.pos = [SCREEN_CX, 6]
 
-    # get line x
+    # get x of line
     # |     /\    |         \
     # |   /   \  |           \
     # |_/______\_| Ex.in 3D   \ <-
@@ -254,7 +267,7 @@ class GameWidget(Widget):
         line_x = central_line_x + (offset * spacing) + self.current_offset_x
         return line_x
 
-    # get line y
+    # get y of line
     # |     /_\    |
     # |   /____\  |
     # |_/_______\_|     ____ <-
@@ -267,7 +280,11 @@ class GameWidget(Widget):
     def init_floors(self):
         with self.canvas:
             for i in range(0, self.number_segment):
-                self.floors.append(Quad(texture=texture))
+                self.floors.append(
+                    Quad(
+                        # source="images/road.jpg"
+                    )
+                )
 
     def get_floor_coordinates(self, fl_x, fl_y):
         fl_y = fl_y - self.current_y_loop
@@ -276,7 +293,6 @@ class GameWidget(Widget):
         return x, y
 
     def generate_floors_coordinates(self):
-        last_x = 0
         last_y = 0
 
         # del floor that out of screen
@@ -284,11 +300,12 @@ class GameWidget(Widget):
             if self.floors_coordinates[i][1] < self.current_y_loop:
                 del self.floors_coordinates[i]
 
+        # avoid duplicate floor
         if len(self.floors_coordinates) > 0:
             last_coordinates = self.floors_coordinates[-1]
             last_y = last_coordinates[1] + 1
 
-        #
+        # add new floor by index pos of floor
         for i in range(len(self.floors_coordinates), self.number_segment):
             self.floors_coordinates.append((0, last_y))
             last_y += 1
@@ -315,6 +332,79 @@ class GameWidget(Widget):
             x4, y4 = self.transform(xmax, ymin)
 
             floor.points = [x1, y1, x2, y2, x3, y3, x4, y4]
+
+    # enemy
+    def init_enemys(self):
+        with self.canvas:
+            for i in range(0, self.number_enemy):
+                # self.enemys.append(Quad(source="./images/car_3.png"))
+                Color(1, 0, 1)
+                self.enemys.append(
+                    Rectangle(
+                        # source="./images/car_2.png"
+                    )
+                )
+
+    def get_enemy_coordinates(self, fl_x, fl_y):
+        fl_y = fl_y - self.current_y_loop
+        x = self.get_line_x_from_index(fl_x)
+        y = self.get_line_y_from_index(fl_y)
+        return x, y
+
+    def generate_enemys_coordinates(self):
+        last_y = 20
+
+        start_index = -int(self.V_NB_LINES / 2) + 1
+
+        # del enemy that out of screen
+        for i in range(len(self.enemys_coordinates) - 1, -1, -1):
+            if self.enemys_coordinates[i][1] < self.current_y_loop:
+                del self.enemys_coordinates[i]
+
+        # avoid duplicate enemy
+        if len(self.enemys_coordinates) > 0:
+            last_coordinates = self.enemys_coordinates[-1]
+            last_y = last_coordinates[1] + 1
+
+        # add new enemy by index pos of enemy
+        for i in range(len(self.enemys_coordinates), self.number_enemy):
+            self.enemys_coordinates.append(
+                (randint(start_index, start_index + self.V_NB_LINES - 2), last_y)
+            )
+            last_y += 1
+
+    def update_enemys(self):
+        start_index = -int(self.V_NB_LINES / 2) + 1
+
+        for i in range(0, self.number_enemy):
+            enemy = self.enemys[i]
+            enemy_coordinates = self.enemys_coordinates[i]
+            xmin, ymin = self.get_enemy_coordinates(
+                enemy_coordinates[0], enemy_coordinates[1] + 0.5
+            )
+            xmax, ymax = self.get_enemy_coordinates(
+                enemy_coordinates[0] + 1, enemy_coordinates[1] + 1
+            )
+            #  2    3
+            #
+            #  1    4
+            x1, y1 = self.transform(xmin, ymin)
+            x2, y2 = self.transform(xmin, ymax)
+            x3, y3 = self.transform(xmax, ymax)
+            x4, y4 = self.transform(xmax, ymin)
+            distance = math.dist((x1, y1), (x4, y4))
+            enemy.size = [distance * 0.5, enemy.size[1]]
+            enemy.pos = [x1, y1]
+            # enemy.points = [
+            #     x4,
+            #     y4,
+            #     x1,
+            #     y1,
+            #     x2,
+            #     y2,
+            #     x3,
+            #     y3,
+            # ]
 
     # line
     def init_vertical_lines(self):
@@ -350,14 +440,20 @@ class GameWidget(Widget):
             x2, y2 = self.transform(xmax, line_y)
             self.horizontal_lines[i].points = [x1, y1, x2, y2]
 
+    # def on_size(self, *args):
+    #     print("ON SIZE W:" + str(self.width) + " H:" + str(self.height))
+
     # main update
     def update(self, dt):
         if STATE_CURRENT == STATE_INIT:
             return
         time_factor = dt * 30
+        self.update_background()
         self.update_vertical_lines()
         self.update_horizontal_lines()
         self.update_floors()
+        if len(self.enemys_coordinates) != 0:
+            self.update_enemys()
         self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
@@ -367,10 +463,14 @@ class GameWidget(Widget):
             self.current_offset_y -= spacing_y
             self.current_y_loop += 1
             self.generate_floors_coordinates()
+            if self.current_y_loop > 5 and self.current_y_loop % 3 == 0:
+                self.generate_enemys_coordinates()
             print("loop : " + str(self.current_y_loop))
-
         speed_x = self.current_direction_car * self.width / 100
-        # print(self.current_offset_x, speed_x)
+        start_index = -int(self.V_NB_LINES / 2) + 1
+        if len(self.enemys_coordinates) != 0:
+            print(self.enemys[0].pos)
+        # print(self.get_line_x_from_index(start_index), self.current_offset_x, speed_x)
         self.current_offset_x += speed_x * time_factor
 
 
