@@ -264,11 +264,17 @@ class GameWidget(Widget):
 
         with self.car.canvas:
             Color(1, 0, 0)
-            self.car.image = Rectangle(
+            self.car.hit = Rectangle(
                 # size=[x * 2 for x in self.car.size],
                 # pos=[,self.car.pos[1]]
                 # source="./images/car.png",
                 # size_hint=[None, None],
+            )
+            self.car.image = Image(
+                size=[x * 3 for x in self.car.size],
+                # pos=[,self.car.pos[1]]
+                source="./images/car.png",
+                size_hint=[None, None],
             )
 
         self.add_widget(self.car)
