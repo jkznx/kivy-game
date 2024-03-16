@@ -182,6 +182,10 @@ class GameWidget(Widget):
             self.current_direction_car = -self.CAR_MOVE_SPEED
         elif "d" in keycode[1]:
             self.current_direction_car = self.CAR_MOVE_SPEED
+        elif "w" in keycode[1]:
+            self.DRIVING_SPEED += 0.01
+        elif "s" in keycode[1]:
+            self.DRIVING_SPEED -= 0.01
         elif "p" in keycode[1]:
             global STATE_CURRENT
             if STATE_CURRENT == STATE_RESTART:
@@ -256,28 +260,11 @@ class GameWidget(Widget):
 
     # car
     def init_car(self):
-
-        self.car = RelativeLayout(
-            pos=[0, 0],
-            size=(100, 100),
-        )
-
-        with self.car.canvas:
-            Color(1, 0, 0)
-            self.car.hit = Rectangle(
-                # size=[x * 2 for x in self.car.size],
-                # pos=[,self.car.pos[1]]
-                # source="./images/car.png",
-                # size_hint=[None, None],
+        with self.canvas:
+            self.car = Image(
+                fit_mode="cover",
+                source="./images/car_cut.png",
             )
-            self.car.image = Image(
-                size=[x * 3 for x in self.car.size],
-                # pos=[,self.car.pos[1]]
-                source="./images/car.png",
-                size_hint=[None, None],
-            )
-
-        self.add_widget(self.car)
 
     def update_car(self):
         y_car = 6
@@ -285,6 +272,7 @@ class GameWidget(Widget):
         right_x = self.perspective_point_x + self.car.size[0] / 2
         self.car_coordinates[0] = (left_x, y_car)
         self.car_coordinates[1] = (right_x, y_car)
+        self.car.size = (self.width * 0.22, self.height * 0.2)
         self.car.pos = [left_x, y_car]
 
     def collision_car(self):
@@ -299,7 +287,7 @@ class GameWidget(Widget):
                     self.enemys[i].size[0],
                     self.enemys[i].size[1] * self.enemys_hitbox,
                 ),
-            )  # , size=self.car.size
+            )
             if car.collide_widget(enemy):
                 return True
         return False
@@ -309,7 +297,6 @@ class GameWidget(Widget):
     # |   /   \  |           \
     # |_/______\_| Ex.in 3D   \ <-
     def get_line_x_from_index(self, index):
-
         central_line_x = self.perspective_point_x
         spacing = self.V_LINES_SPACING * self.width
         offset = index - 0.5
@@ -387,7 +374,7 @@ class GameWidget(Widget):
         with self.canvas:
             for i in range(0, self.number_enemy):
                 # self.enemys.append(Quad(source="./images/car_3.png"))
-                # Color(1, 0, 1)
+                Color(1, 0, 1)
                 self.enemys.append(Rectangle(source="./images/car_2.png"))
 
     def get_enemy_coordinates(self, emy_x, em_y):
@@ -419,8 +406,6 @@ class GameWidget(Widget):
             last_y += 1
 
     def update_enemys(self):
-        start_index = -int(self.V_NB_LINES / 2) + 1
-
         for i in range(0, self.number_enemy):
             enemy = self.enemys[i]
             enemy_coordinates = self.enemys_coordinates[i]
@@ -434,24 +419,11 @@ class GameWidget(Widget):
             #  2    3
             #
             #  1    4
-            # print(i, enemy.pos)
             x1, y1 = self.transform(xmin, ymin)
-            x2, y2 = self.transform(xmin, ymax)
-            x3, y3 = self.transform(xmax, ymax)
             x4, y4 = self.transform(xmax, ymin)
             distance = math.dist((x1, y1), (x4, y4))
             enemy.size = [distance * 0.5, enemy.size[1]]
             enemy.pos = [x1 + (distance * 0.25), y1]
-            # enemy.points = [
-            #     x4,
-            #     y4,
-            #     x1,
-            #     y1,
-            #     x2,
-            #     y2,
-            #     x3,
-            #     y3,
-            # ]
 
     # line
     def init_vertical_lines(self):
@@ -487,13 +459,11 @@ class GameWidget(Widget):
             x2, y2 = self.transform(xmax, line_y)
             self.horizontal_lines[i].points = [x1, y1, x2, y2]
 
-    # def on_size(self, *args):
-    #     print("ON SIZE W:" + str(self.width) + " H:" + str(self.height))
-
     # main update
     def update(self, dt):
         if STATE_CURRENT == STATE_INIT:
             return
+        # real time
         time_factor = dt * 30
         self.update_background()
         self.update_vertical_lines()
@@ -503,8 +473,8 @@ class GameWidget(Widget):
             self.update_enemys()
             if self.collision_car():
                 print("over")
-                # Clock.unschedule(self.game_running)
-                # return
+                Clock.unschedule(self.game_running)
+                return
         self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
@@ -519,14 +489,11 @@ class GameWidget(Widget):
             print("loop : " + str(self.current_y_loop))
         speed_x = self.current_direction_car * self.width / 100
         start_index = -int(self.V_NB_LINES / 2) + 1
-        # if len(self.enemys_coordinates) != 0:
-        #     print(self.enemys[0].pos)
 
         ## make car contain in road
         # self.car_coordinates[0][0] left x car
         # self.car_coordinates[1][0] right x car
         # <-
-
         if (
             self.current_direction_car < 0
             and self.vertical_lines[start_index].points[0] < self.car_coordinates[0][0]
@@ -549,9 +516,6 @@ class Chocobo_RacingApp(App):
         game_screen = GameScreen(name="play")
         stop_screen = StopScreen(name="stop")
         over_screen = OverScreen(name="over")
-
-        game_widget = GameWidget()
-        game_screen.add_widget(game_widget)
 
         screen_manager.add_widget(start_screen)
         screen_manager.add_widget(game_screen)
