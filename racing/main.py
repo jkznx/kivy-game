@@ -16,6 +16,7 @@ from kivy.clock import Clock
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.graphics import Line, Quad, Triangle
 from kivy.properties import NumericProperty
@@ -104,7 +105,7 @@ class OverScreen(Screen):
     pass
 
 
-class Car(Image):
+class Car(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # self.source = "./images/car.png"
@@ -132,7 +133,7 @@ class GameWidget(Widget):
     H_LINES_SPACING = 0.1  # percentage in screen height
     horizontal_lines = []
 
-    DRIVING_SPEED = 1.0
+    DRIVING_SPEED = 0.3
     current_offset_y = 0
     current_y_loop = 0
 
@@ -151,6 +152,9 @@ class GameWidget(Widget):
     number_enemy = 10
     enemys = []
     enemys_coordinates = []
+
+    car_hitbox = 0.1
+    enemys_hitbox = 0.25
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -196,54 +200,55 @@ class GameWidget(Widget):
         self.current_direction_car = 0
 
     # background
-    def init_background(self):
-        with self.canvas.before:
-            # self.bg = Rectangle(
-            #     size=Window.size,
-            #     source="./images/racing_bg_3.png",
-            #     pos=(0, 0),
-            # )
-            # draw sky
-            Color(*[component / 255 for component in blue_sky])
-            self.sky = Rectangle(pos=(0, 0), size=(Window.size))
+    def init_background(self): ...
 
-            # cloud on sky
-            cloud_group_positions = [
-                (Window.size[0] * 0.2, Window.size[1] * 0.85),
-                (Window.size[0] * 0.5, Window.size[1] * 0.88),
-                (Window.size[0] * 0.8, Window.size[1] * 0.9),
-            ]
+    # with self.canvas.before:
+    #     # self.bg = Rectangle(
+    #     #     size=Window.size,
+    #     #     source="./images/racing_bg_3.png",
+    #     #     pos=(0, 0),
+    #     # )
+    #     # draw sky
+    #     Color(*[component / 255 for component in blue_sky])
+    #     self.sky = Rectangle(pos=(0, 0), size=(Window.size))
 
-            for cloud_pos_x, cloud_pos_y in cloud_group_positions:
-                for _ in range(30):
-                    cloud_size = randint(30, 120)
-                    cloud_color = white
+    #     # cloud on sky
+    #     cloud_group_positions = [
+    #         (Window.size[0] * 0.2, Window.size[1] * 0.85),
+    #         (Window.size[0] * 0.5, Window.size[1] * 0.88),
+    #         (Window.size[0] * 0.8, Window.size[1] * 0.9),
+    #     ]
 
-                    Color(*[component / 255 for component in cloud_color])
-                    self.clound = Ellipse(
-                        pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
-                    )
-                    cloud_pos_x += randint(-30, 30)
-                    cloud_pos_y += randint(-10, 10)
+    #     for cloud_pos_x, cloud_pos_y in cloud_group_positions:
+    #         for _ in range(30):
+    #             cloud_size = randint(30, 120)
+    #             cloud_color = white
 
-            # add sunset at the center of bottom sky
-            # Color(*[component / 255 for component in sunset_color])
-            # Ellipse(
-            #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
-            # )
+    #             Color(*[component / 255 for component in cloud_color])
+    #             self.clound = Ellipse(
+    #                 pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
+    #             )
+    #             cloud_pos_x += randint(-30, 30)
+    #             cloud_pos_y += randint(-10, 10)
 
-            # draw grass
-            Color(*[component / 255 for component in green_grass])
-            Rectangle(
-                pos=(0, 0),
-                size=(Window.size[0], Window.size[1] * 0.35 + 3),
-            )
-            self.pause = Label(
-                text=self.pause_text,
-                font_size="30sp",
-                font_name="./fonts/pixel_font.ttf",
-                pos=(600, 600),
-            )
+    #     # add sunset at the center of bottom sky
+    #     # Color(*[component / 255 for component in sunset_color])
+    #     # Ellipse(
+    #     #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
+    #     # )
+
+    #     # draw grass
+    #     Color(*[component / 255 for component in green_grass])
+    #     Rectangle(
+    #         pos=(0, 0),
+    #         size=(Window.size[0], Window.size[1] * 0.35 + 3),
+    #     )
+    #     self.pause = Label(
+    #         text=self.pause_text,
+    #         font_size="30sp",
+    #         font_name="./fonts/pixel_font.ttf",
+    #         pos=(600, 600),
+    #     )
 
     def update_background(self):
         # some update
@@ -251,8 +256,22 @@ class GameWidget(Widget):
 
     # car
     def init_car(self):
-        with self.canvas:
-            self.car = Car()
+
+        self.car = RelativeLayout(
+            pos=[0, 0],
+            size=(100, 100),
+        )
+
+        with self.car.canvas:
+            Color(1, 0, 0)
+            self.car.image = Rectangle(
+                # size=[x * 2 for x in self.car.size],
+                # pos=[,self.car.pos[1]]
+                # source="./images/car.png",
+                # size_hint=[None, None],
+            )
+
+        self.add_widget(self.car)
 
     def update_car(self):
         y_car = 6
@@ -261,6 +280,23 @@ class GameWidget(Widget):
         self.car_coordinates[0] = (left_x, y_car)
         self.car_coordinates[1] = (right_x, y_car)
         self.car.pos = [left_x, y_car]
+
+    def collision_car(self):
+        for i in range(0, self.number_enemy):
+            car = Widget(
+                pos=self.car.pos,
+                size=(self.car.size[0], self.car.size[1] * self.car_hitbox),
+            )
+            enemy = Widget(
+                pos=self.enemys[i].pos,
+                size=(
+                    self.enemys[i].size[0],
+                    self.enemys[i].size[1] * self.enemys_hitbox,
+                ),
+            )  # , size=self.car.size
+            if car.collide_widget(enemy):
+                return True
+        return False
 
     # get x of line
     # |     /\    |         \
@@ -345,17 +381,13 @@ class GameWidget(Widget):
         with self.canvas:
             for i in range(0, self.number_enemy):
                 # self.enemys.append(Quad(source="./images/car_3.png"))
-                Color(1, 0, 1)
-                self.enemys.append(
-                    Rectangle(
-                        # source="./images/car_2.png"
-                    )
-                )
+                # Color(1, 0, 1)
+                self.enemys.append(Rectangle(source="./images/car_2.png"))
 
-    def get_enemy_coordinates(self, fl_x, fl_y):
-        fl_y = fl_y - self.current_y_loop
-        x = self.get_line_x_from_index(fl_x)
-        y = self.get_line_y_from_index(fl_y)
+    def get_enemy_coordinates(self, emy_x, em_y):
+        em_y = em_y - self.current_y_loop
+        x = self.get_line_x_from_index(emy_x)
+        y = self.get_line_y_from_index(em_y)
         return x, y
 
     def generate_enemys_coordinates(self):
@@ -463,6 +495,10 @@ class GameWidget(Widget):
         self.update_floors()
         if len(self.enemys_coordinates) != 0:
             self.update_enemys()
+            if self.collision_car():
+                print("over")
+                # Clock.unschedule(self.game_running)
+                # return
         self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
@@ -484,6 +520,7 @@ class GameWidget(Widget):
         # self.car_coordinates[0][0] left x car
         # self.car_coordinates[1][0] right x car
         # <-
+
         if (
             self.current_direction_car < 0
             and self.vertical_lines[start_index].points[0] < self.car_coordinates[0][0]
