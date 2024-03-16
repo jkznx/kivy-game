@@ -145,6 +145,8 @@ class GameWidget(Widget):
     floors_coordinates = []
 
     car = None
+    # left right
+    car_coordinates = [(0, 0), (0, 0)]
 
     number_enemy = 10
     enemys = []
@@ -253,7 +255,12 @@ class GameWidget(Widget):
             self.car = Car()
 
     def update_car(self):
-        self.car.pos = [SCREEN_CX, 6]
+        y_car = 6
+        left_x = self.perspective_point_x - self.car.size[0] / 2
+        right_x = self.perspective_point_x + self.car.size[0] / 2
+        self.car_coordinates[0] = (left_x, y_car)
+        self.car_coordinates[1] = (right_x, y_car)
+        self.car.pos = [left_x, y_car]
 
     # get x of line
     # |     /\    |         \
@@ -385,16 +392,18 @@ class GameWidget(Widget):
             xmax, ymax = self.get_enemy_coordinates(
                 enemy_coordinates[0] + 1, enemy_coordinates[1] + 1
             )
+
             #  2    3
             #
             #  1    4
+            # print(i, enemy.pos)
             x1, y1 = self.transform(xmin, ymin)
             x2, y2 = self.transform(xmin, ymax)
             x3, y3 = self.transform(xmax, ymax)
             x4, y4 = self.transform(xmax, ymin)
             distance = math.dist((x1, y1), (x4, y4))
             enemy.size = [distance * 0.5, enemy.size[1]]
-            enemy.pos = [x1, y1]
+            enemy.pos = [x1 + (distance * 0.25), y1]
             # enemy.points = [
             #     x4,
             #     y4,
@@ -468,10 +477,25 @@ class GameWidget(Widget):
             print("loop : " + str(self.current_y_loop))
         speed_x = self.current_direction_car * self.width / 100
         start_index = -int(self.V_NB_LINES / 2) + 1
-        if len(self.enemys_coordinates) != 0:
-            print(self.enemys[0].pos)
-        # print(self.get_line_x_from_index(start_index), self.current_offset_x, speed_x)
-        self.current_offset_x += speed_x * time_factor
+        # if len(self.enemys_coordinates) != 0:
+        #     print(self.enemys[0].pos)
+
+        ## make car contain in road
+        # self.car_coordinates[0][0] left x car
+        # self.car_coordinates[1][0] right x car
+        # <-
+        if (
+            self.current_direction_car > 0
+            and self.vertical_lines[start_index].points[0] < self.car_coordinates[0][0]
+        ):
+            self.current_offset_x += speed_x * time_factor
+        # ->
+        elif (
+            self.current_direction_car < 0
+            and self.vertical_lines[start_index + self.V_NB_LINES - 1].points[0]
+            > self.car_coordinates[1][0]
+        ):
+            self.current_offset_x += speed_x * time_factor
 
 
 class Chocobo_RacingApp(App):
