@@ -175,9 +175,9 @@ class GameWidget(Widget):
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
         if "a" in keycode[1]:
-            self.current_direction_car = self.CAR_MOVE_SPEED
-        elif "d" in keycode[1]:
             self.current_direction_car = -self.CAR_MOVE_SPEED
+        elif "d" in keycode[1]:
+            self.current_direction_car = self.CAR_MOVE_SPEED
         elif "p" in keycode[1]:
             global STATE_CURRENT
             if STATE_CURRENT == STATE_RESTART:
@@ -485,17 +485,17 @@ class GameWidget(Widget):
         # self.car_coordinates[1][0] right x car
         # <-
         if (
-            self.current_direction_car > 0
+            self.current_direction_car < 0
             and self.vertical_lines[start_index].points[0] < self.car_coordinates[0][0]
         ):
-            self.current_offset_x += speed_x * time_factor
+            self.current_offset_x -= speed_x * time_factor
         # ->
         elif (
-            self.current_direction_car < 0
+            self.current_direction_car > 0
             and self.vertical_lines[start_index + self.V_NB_LINES - 1].points[0]
             > self.car_coordinates[1][0]
         ):
-            self.current_offset_x += speed_x * time_factor
+            self.current_offset_x -= speed_x * time_factor
 
 
 class Chocobo_RacingApp(App):
