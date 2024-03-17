@@ -2,7 +2,7 @@ from kivy.config import Config
 
 SCREEN_W = 1000
 SCREEN_H = 700
-RESIZE_ENABLE = True
+RESIZE_ENABLE = False
 
 Config.set("graphics", "resizable", RESIZE_ENABLE)
 Config.set("graphics", "width", str(SCREEN_W))
@@ -16,15 +16,12 @@ from kivy.clock import Clock
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.graphics import Line, Quad, Triangle
-from kivy.properties import NumericProperty, StringProperty
-from kivy.core.image import Image as Im
+from kivy.graphics import Line, Quad
+from kivy.properties import NumericProperty
 from kivy.uix.image import Image
 from kivy.core.audio import SoundLoader
-from kivy.vector import Vector
-from random import randint, randrange, choice
+from random import randint, choice
 import math
 
 SCREEN_CX = SCREEN_W / 2
@@ -51,8 +48,6 @@ def switch_screen():
         screen_manager.current = "menu"
     elif STATE_CURRENT == STATE_PLAY:
         screen_manager.current = "play"
-    elif STATE_CURRENT == STATE_GAMEOVER:
-        screen_manager.current = "over"
     elif STATE_CURRENT == STATE_GAMEOVER:
         screen_manager.current = "over"
 
@@ -215,19 +210,23 @@ class OverScreen(Screen):
 
         self.add_widget(layout)
 
+    def play_sound(self):
+        self.over_sound = SoundLoader.load("./sounds/over.wav")
+        self.over_sound.volume = 0.3
+        self.over_sound.play()
+
     def set_result_score(self, score):
         self.result_label.text = f"Result Score: {score}"
 
     def play_again(self, instance):
         global STATE_CURRENT
         STATE_CURRENT = STATE_LEVEL
+        self.over_sound.stop()
         game_screen.children[0].restart()
         switch_screen()
 
 
 class GameWidget(Widget):
-    # keyboard input
-    # from user_actions import _on_key_down, _on_key_up, _on_keyboard_closed
 
     # view
     from tranforms import transform, transform_2D, transform_perspective
@@ -294,14 +293,16 @@ class GameWidget(Widget):
 
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
         Clock.schedule_interval(self.update_clouds, 1 / 60)
+        Clock.schedule_interval(self.update_time_and_score, 1)
 
     def update_clouds(self, dt):
         # Update the positions of all Ellipse objects (clouds)
-        for instruction in self.canvas.before.children[:]:
-            if isinstance(instruction, Ellipse):
-                instruction.pos = (instruction.pos[0] - dt * 60, instruction.pos[1])
-                if instruction.pos[0] + instruction.size[0] < 0:
-                    instruction.pos = (self.width, instruction.pos[1])
+        if not self.is_paused:
+            for instruction in self.canvas.before.children[:]:
+                if isinstance(instruction, Ellipse):
+                    instruction.pos = (instruction.pos[0] - dt * 60, instruction.pos[1])
+                    if instruction.pos[0] + instruction.size[0] < 0:
+                        instruction.pos = (self.width, instruction.pos[1])
 
     def update_bird(self, dt):
         # Update bird position
@@ -312,8 +313,8 @@ class GameWidget(Widget):
 
     # time and score
     def update_time_and_score(self, dt):
-        global Level
-        if not self.is_paused:
+        global Level, STATE_CURRENT
+        if not self.is_paused and STATE_CURRENT == STATE_PLAY:
             self.time_label.text = (
                 f"Time: {int(self.time_label.text.split(': ')[-1]) + 1}"  # Update time
             )
@@ -390,15 +391,17 @@ class GameWidget(Widget):
             if STATE_CURRENT == STATE_RESTART:
                 self.pause_text = "p for pause"
                 STATE_CURRENT = STATE_PLAY
+                self.pause.text = self.pause_text
                 self.is_paused = False
-
                 self.game_running = Clock.schedule_interval(self.update, 1 / 30)
+                print("running", self.pause_text)
             elif STATE_CURRENT == STATE_PLAY:
                 self.pause_text = "p for resume"
+                self.pause.text = self.pause_text
                 STATE_CURRENT = STATE_RESTART
                 self.is_paused = True
                 Clock.unschedule(self.game_running)
-            print("stop", self.pause_text)
+                print("stop", self.pause_text)
 
     def _on_key_up(self, keyboard, keycode):
         self.current_direction_car = 0
@@ -480,12 +483,14 @@ class GameWidget(Widget):
             )
             self.pause = Label(
                 text=self.pause_text,
+                outline_width=1,
                 font_size="30sp",
                 font_name="./fonts/pixel_font.ttf",
                 pos=(600, 600),
             )
         self.time_label = Label(
             text="Time: 0",
+            outline_width=1,
             font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
             pos=(75, self.height / 2 + 500),  # Adjust position as needed
@@ -497,6 +502,7 @@ class GameWidget(Widget):
         self.score = 0
         self.score_label = Label(
             text="Score: 0",
+            outline_width=1,
             font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
             pos=(
@@ -507,7 +513,6 @@ class GameWidget(Widget):
         )
         self.add_widget(self.score_label)
 
-        Clock.schedule_interval(self.update_time_and_score, 1)
         # Add hearts
         heart_y = self.height / 2 + 1000 * min(
             SCREEN_W / 1440, SCREEN_H / 800
@@ -546,7 +551,7 @@ class GameWidget(Widget):
         right_x = self.perspective_point_x + self.car.size[0] / 2
         self.car_coordinates[0] = (left_x, y_car)
         self.car_coordinates[1] = (right_x, y_car)
-        self.car.size = (self.width * 0.2, self.height * 0.18)
+        self.car.size = (self.width * 0.22, self.height * 0.18)
         self.car.pos = [left_x, y_car]
 
     def collision_car(self):
@@ -734,7 +739,7 @@ class GameWidget(Widget):
             x1, y1 = self.transform(xmin, ymin)
             x4, y4 = self.transform(xmax, ymin)
             distance_x = math.dist((x1, y1), (x4, y4))
-            enemy.size = [distance_x * 0.45, distance_x * 0.45 * 0.7]
+            enemy.size = [distance_x * 0.5, distance_x * 0.5 * 0.7]
 
             if enemy_coordinates[0] < 0:
                 enemy.pos = [x4 - distance_x / 2, y1]
@@ -811,6 +816,7 @@ class GameWidget(Widget):
                     Clock.unschedule(self.game_running)
                     over_screen.set_result_score(self.score)
                     STATE_CURRENT = STATE_GAMEOVER
+                    over_screen.play_sound()
                     switch_screen()
                     if MenuScreen.game_sound:
                         MenuScreen.game_sound.stop()
@@ -837,7 +843,7 @@ class GameWidget(Widget):
             self.generate_floors_coordinates()
             if self.current_y_loop > 5 and self.current_y_loop % 4 == 0:
                 self.generate_enemys_coordinates()
-            print("loop : " + str(self.current_y_loop))
+            # print("loop : " + str(self.current_y_loop))
         speed_x = self.current_direction_car * self.width / 100
         start_index = -int(self.V_NB_LINES / 2) + 1
 
