@@ -316,14 +316,6 @@ class GameWidget(Widget):
     def set_difficulty(self, difficulty_level):
         self.difficulty = difficulty_level
 
-        # Update score increment rate based on difficulty
-        if self.difficulty == "easy":
-            self.score += 10
-        elif self.difficulty == "normal":
-            self.score += 20
-        elif self.difficulty == "hard":
-            self.score += 30
-
     #time and score
     def update_time_and_score(self, dt):
         if not self.is_paused:
