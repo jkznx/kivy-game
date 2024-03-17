@@ -1,4 +1,16 @@
 from kivy.config import Config
+
+# Fixed screen size
+SCREEN_W = 1440
+SCREEN_H = 800
+
+# Disable resizing
+Config.set("graphics", "resizable", False)
+
+# Set fixed window size
+Config.set("graphics", "width", str(SCREEN_W))
+Config.set("graphics", "height", str(SCREEN_H))
+
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.graphics import Rectangle, Color, Ellipse, Triangle, Line
@@ -13,17 +25,6 @@ from kivy.uix.progressbar import ProgressBar
 from kivy.properties import NumericProperty
 
 from random import randint
-
-# Fixed screen size
-SCREEN_W = 1440
-SCREEN_H = 800
-
-# Disable resizing
-Config.set("graphics", "resizable", False)
-
-# Set fixed window size
-Config.set("graphics", "width", str(SCREEN_W))
-Config.set("graphics", "height", str(SCREEN_H))
 
 STATE_INIT = 1
 STATE_RESTART = 2
@@ -50,7 +51,7 @@ class StartScreen(Screen):
         # Game Title
         game_title = Label(
             text="Chocobo Racing",
-            font_size="60sp",
+            font_size=int(60 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
             pos_hint={"center_x": 0.5, "top": 1.35},
         )
@@ -73,15 +74,59 @@ class StartScreen(Screen):
 
 
 class GameScreen(Screen):
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = FloatLayout()
+
+        # Add buttons for difficulty selection
+        button_size = (150 * min(SCREEN_W / 1440, SCREEN_H / 800), 50 * min(SCREEN_W / 1440, SCREEN_H / 800))
+        easy_button = Button(
+            text="Easy",
+            size_hint=(None, None),
+            size=button_size,
+            pos_hint={"center_x": 0.25, "center_y": 0.5},
+            on_press=self.set_difficulty_easy
+        )
+        normal_button = Button(
+            text="Normal",
+            size_hint=(None, None),
+            size=button_size,
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+            on_press=self.set_difficulty_normal
+        )
+        hard_button = Button(
+            text="Hard",
+            size_hint=(None, None),
+            size=button_size,
+            pos_hint={"center_x": 0.75, "center_y": 0.5},
+            on_press=self.set_difficulty_hard
+        )
+
+        layout.add_widget(easy_button)
+        layout.add_widget(normal_button)
+        layout.add_widget(hard_button)
+
+        self.add_widget(layout)
+
+    def set_difficulty_easy(self, instance):
+        # Set the game difficulty to easy
+        pass
+
+    def set_difficulty_normal(self, instance):
+        # Set the game difficulty to normal
+        pass
+
+    def set_difficulty_hard(self, instance):
+        # Set the game difficulty to hard
+        pass
 
 
 class Car(Image):
-    def __init__(self, x=350, y=0):
+    def __init__(self, x=SCREEN_W / 2 - 150 * min(SCREEN_W / 1440, SCREEN_H / 800), y=0):
         super().__init__()
         self.source = "./images/car.png"
         self.size_hint = (None, None)
-        self.size = (300, 300)  # Adjusted size
+        self.size = (500 * min(SCREEN_W / 1440, SCREEN_H / 800), 500 * min(SCREEN_W / 1440, SCREEN_H / 800))  # Adjusted size
         self.pos = (x, y)
 
 
@@ -93,28 +138,27 @@ class GameWidget(Widget):
         super().__init__(**kwargs)
         self.bind(pos=self.draw_my_stuff)
         self.bind(size=self.draw_my_stuff)
-        self.road_pos_y = self.height / 2 - 300
+        self.road_pos_y = self.height / 2 - 300 * min(SCREEN_W / 1440, SCREEN_H / 800)
         self.dash_offset = 0
         self.car = Car()
         self.add_widget(self.car)
 
-        self.bird = Image(source="./images/bird.gif", size=(200, 200))
+        self.bird = Image(source="./images/bird.gif", size=(300 * min(SCREEN_W / 1440, SCREEN_H / 800), 300 * min(SCREEN_W / 1440, SCREEN_H / 800)))
         self.add_widget(self.bird)
 
-         # Add hearts
+        # Add hearts
         self.hearts = []
-        heart_y = self.height/2 + 600  # Set y-coordinate for all hearts
+        heart_y = self.height / 2 + 600 * min(SCREEN_W / 1440, SCREEN_H / 800)  # Set y-coordinate for all hearts
         for i in range(3):
-            heart = Image(source="./images/pixel_heart.png", size=(50, 50))
-            heart.pos = (self.width/2 - (i) * 10, heart_y)
+            heart = Image(source="./images/pixel_heart.png", size=(75 * min(SCREEN_W / 1440, SCREEN_H / 800), 75 * min(SCREEN_W / 1440, SCREEN_H / 800)))
+            heart.pos = (self.width / 2 - (i) * 10 * min(SCREEN_W / 1440, SCREEN_H / 800), heart_y)
             self.add_widget(heart)
             self.hearts.append(heart)
-        
 
         # Pause label
         self.pause_label = Label(
             text="Paused",
-            font_size="50sp",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
             pos=(self.width / 2, self.height / 2),
             color=(1, 1, 1, 1),  # White color
@@ -124,7 +168,7 @@ class GameWidget(Widget):
 
         self.time_label = Label(
             text="Time: 0",
-            font_size="20sp",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
             pos=(20, self.height - 40),  # Adjust position as needed
             color=(1, 1, 1, 1),  # White color
@@ -135,13 +179,12 @@ class GameWidget(Widget):
         self.score = 0
         self.score_label = Label(
             text="Score: 0",
-            font_size="20sp",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
-            pos=(self.width - 120, self.height - 40),  # Adjust position as needed
+            pos=(self.width - 120 * min(SCREEN_W / 1440, SCREEN_H / 800), self.height - 40),  # Adjust position as needed
             color=(1, 1, 1, 1),  # White color
         )
         self.add_widget(self.score_label)
-
 
         Clock.schedule_interval(self.update_time_and_score, 1)
         Clock.schedule_interval(self.update_road_position, 1 / 30)
@@ -169,12 +212,12 @@ class GameWidget(Widget):
 
     def update_road_position(self, dt):
         # Update road position
-        self.road_pos_y += 2  # Adjust speed here
-        if self.road_pos_y > self.height * 0.8 - 900:
-            self.road_pos_y = self.height / 2.0 - 375  # Reset when it moves out of view
-        self.dash_offset += 10  # Adjust speed here for the dash line
-        if self.dash_offset > 120:
-            self.dash_offset =  60 # Reset dash offset when it reaches the dash length
+        self.road_pos_y += 40 * min(SCREEN_W / 1440, SCREEN_H / 800)  # Adjust speed here
+        if self.road_pos_y > self.height * 0.8 - 900 * min(SCREEN_W / 1440, SCREEN_H / 800):
+            self.road_pos_y = self.height / 2.0 - 375 * min(SCREEN_W / 1440, SCREEN_H / 800)
+        self.dash_offset += 10 * min(SCREEN_W / 1440, SCREEN_H / 800)
+        if self.dash_offset > 120 * min(SCREEN_W / 1440, SCREEN_H / 800):
+            self.dash_offset =  60 * min(SCREEN_W / 1440, SCREEN_H / 800)
         self.draw_my_stuff()
 
     def move_car(self, dt):
@@ -183,8 +226,8 @@ class GameWidget(Widget):
 
         step = self.car_speed * dt
 
-        max_left = 350 - 300
-        max_right = 350 + 300
+        max_left = SCREEN_W / 2 - 150 * min(SCREEN_W / 1440, SCREEN_H / 800)
+        max_right = SCREEN_W / 2 + 150 * min(SCREEN_W / 1440, SCREEN_H / 800)
 
         if "a" in self.pressed_keys and cur_x > max_left:
             cur_x -= step
@@ -213,19 +256,19 @@ class GameWidget(Widget):
 
             for cloud_pos_x, cloud_pos_y in cloud_group_positions:
                 for _ in range(30):
-                    cloud_size = randint(30, 120)
+                    cloud_size = randint(30, 120) * min(SCREEN_W / 1440, SCREEN_H / 800)
                     cloud_color = white
 
                     Color(*[component / 255 for component in cloud_color])
                     Ellipse(
                         pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
                     )
-                    cloud_pos_x += randint(-30, 30)
-                    cloud_pos_y += randint(-10, 10)
+                    cloud_pos_x += randint(-30, 30) * min(SCREEN_W / 1440, SCREEN_H / 800)
+                    cloud_pos_y += randint(-10, 10) * min(SCREEN_W / 1440, SCREEN_H / 800)
 
             # add sunset at the center of bottom sky
             Color(*[component / 255 for component in sunset_color])
-            Ellipse(pos=(self.width / 2 - 75, self.height * 0.7), size=(150, 150))
+            Ellipse(pos=(self.width / 2 - 75, self.height * 0.7), size=(150 * min(SCREEN_W / 1440, SCREEN_H / 800), 150 * min(SCREEN_W / 1440, SCREEN_H / 800)))
 
             # draw grass
             Color(*[component / 255 for component in green_grass])
@@ -239,7 +282,7 @@ class GameWidget(Widget):
                     0,
                     self.width / 2,
                     0,
-                    self.width / 4 + 50,
+                    self.width / 4 + 50 * min(SCREEN_W / 1440, SCREEN_H / 800),
                     self.height * 0.8,
                 ]
             )
@@ -249,22 +292,25 @@ class GameWidget(Widget):
                     0,
                     self.width / 2,
                     0,
-                    self.width * 3 / 4 - 50,
+                    self.width * 3 / 4 - 50 * min(SCREEN_W / 1440, SCREEN_H / 800),
                     self.height * 0.8,
                 ]
             )
 
-            # draw road
+           # Draw road
+            road_width = 800 * min(SCREEN_W / 1440, SCREEN_H / 800) 
+            road_height = min(self.height * 0.8, self.road_pos_y + 900 * min(SCREEN_W / 1440, SCREEN_H / 800))
+            road_pos_x = self.width / 2 - road_width / 2  # Center the road
             Color(*[component / 255 for component in black])
             Rectangle(
-                pos=(self.width / 2.0 - 200, self.road_pos_y),
-                size=(400, self.height * 0.8),
-            )  # -200 from half of 400 rect make it center
+                pos=(road_pos_x, 0),
+                size=(road_width, road_height),
+            )
 
             # Draw center line
             Color(1, 1, 1)
-            dash_length = 100
-            gap_length = 300
+            dash_length = 100 * min(SCREEN_W / 1440, SCREEN_H / 800)
+            gap_length = 300 * min(SCREEN_W / 1440, SCREEN_H / 800)
             Line(
                 points=[self.width / 2.0, -100, self.width / 2.0, self.height * 0.8],
                 dash_length=dash_length,
@@ -272,7 +318,7 @@ class GameWidget(Widget):
             )
 
             # draw bird
-            self.bird.pos = (self.width / 2 + 250, self.height * 0.75)
+            self.bird.pos = (self.width / 2 + 450 * min(SCREEN_W / 1440, SCREEN_H / 800), self.height * 0.75)
             Rectangle(texture=self.bird.texture, pos=self.bird.pos, size=self.bird.size)
 
             # Draw hearts
@@ -285,9 +331,9 @@ class GameWidget(Widget):
         # Draw time label
         self.time_label = Label(
             text=self.time_label.text,
-            font_size="20sp",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
-            pos=(20, self.height/2 - 40),
+            pos=(75 * min(SCREEN_W / 1440, SCREEN_H / 800), self.height / 2 - 40 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             color=(1, 1, 1, 1),  # White color
         )
         self.add_widget(self.time_label)
@@ -295,16 +341,13 @@ class GameWidget(Widget):
         # Draw score label
         self.score_label = Label(
             text=self.score_label.text,
-            font_size="20sp",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
-            pos=(self.width - 120, self.height/2 - 40),
+            pos=(self.width - 200 * min(SCREEN_W / 1440, SCREEN_H / 800), self.height / 2 - 40 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             color=(1, 1, 1, 1),  # White color
         )
         self.add_widget(self.score_label)
 
-        
-
-        
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
         self._keyboard.unbind(on_key_up=self._on_key_up)
