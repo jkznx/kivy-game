@@ -246,6 +246,9 @@ class GameWidget(Widget):
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
+        
+        self.hearts = []  # List to store heart icons
+        self.heart_spacing = 100  # Spacing between heart icons
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     # time and score
@@ -341,6 +344,31 @@ class GameWidget(Widget):
 
     def _on_key_up(self, keyboard, keycode):
         self.current_direction_car = 0
+
+    def add_heart(self):
+        # Add a heart icon to the screen
+        heart = Image(source="./images/pixel_heart.png", size=(75, 75))
+        self.add_widget(heart)
+        self.hearts.append(heart)
+
+        # Update heart positions
+        self.update_heart()
+
+    def remove_heart(self):
+        # Remove a heart icon from the screen
+        if self.hearts:
+            heart = self.hearts.pop()
+            self.remove_widget(heart)
+
+            # Update heart positions
+            self.update_heart()
+
+    def update_heart(self):
+        # Update the positions of heart icons on the screen
+        num_hearts = len(self.hearts)
+        for i, heart in enumerate(self.hearts):
+            heart.x = i * (heart.width + self.heart_spacing)
+            heart.y = self.height - heart.height - 10
 
     # background
     def init_background(self):
@@ -718,6 +746,9 @@ class GameWidget(Widget):
                     return
                 elif self.HEART > 0 and self.Immortal <= 0:
                     print("hit")
+                    if self.hearts:
+                            self.remove_widget(self.hearts[0])
+                            self.hearts.pop(0)
                     self.HEART -= 1
                     self.Immortal = 3
 
