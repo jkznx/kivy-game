@@ -142,7 +142,41 @@ class StopScreen(Screen):
 
 
 class OverScreen(Screen):
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = FloatLayout()
+
+        # Result Score Label
+        self.result_label = Label(
+            text="Result Score: 0",
+            font_size="40sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos_hint={"center_x": 0.5, "center_y": 0.7},
+            color=(1, 1, 1, 1),  # White color
+        )
+        layout.add_widget(self.result_label)
+
+        # Play Again Button
+        play_again_button = Button(
+            text="Play Again",
+            font_name="./fonts/pixel_font.ttf",
+            size_hint=(None, None),
+            size=(200, 50),
+            pos_hint={"center_x": 0.5, "center_y": 0.4},
+        )
+        play_again_button.bind(on_press=self.play_again)
+        layout.add_widget(play_again_button)
+
+        self.add_widget(layout)
+
+    def set_result_score(self, score):
+        self.result_label.text = f"Result Score: {score}"
+
+    def play_again(self, instance):
+        global STATE_CURRENT
+        STATE_CURRENT = STATE_PLAY
+        switch_screen()
+        self.parent.get_screen("play").reset_game()  # Reset the game when play again is pressed
 
 
 class Car(Widget):
@@ -219,10 +253,10 @@ class GameWidget(Widget):
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     def init_background(self):
-        self.bg1 = Image(source="./images/back.png", allow_stretch=True, keep_ratio=False)
+        self.bg1 = Image(source="./images/racing_bg_1.png", allow_stretch=True, keep_ratio=False)
         self.bg1.size = (self.width, self.height)
         self.add_widget(self.bg1)
-        self.bg2 = Image(source="./images/back.png", allow_stretch=True, keep_ratio=False)
+        self.bg2 = Image(source="./images/racing_bg_2.png", allow_stretch=True, keep_ratio=False)
         self.bg2.size = (self.width, self.height)
         self.bg2.pos = (0, self.height)
         self.add_widget(self.bg2)
