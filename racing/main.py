@@ -768,7 +768,7 @@ class GameWidget(Widget):
                     self.HEART -= 1
                     self.Immortal = 3
 
-        self.update_background()
+        self.update_background() #use this dont forgot remove
 
         self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
