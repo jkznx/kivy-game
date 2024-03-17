@@ -429,10 +429,13 @@ class GameWidget(Widget):
                 )
             )
 
-    def re_draw(self, ins):
-        self.canvas.remove(ins)
-        with self.canvas:
-            ins
+    def re_draw_behide_car(self, i):
+        old_car = self.car
+        old_enemy = self.enemys[i]
+        self.canvas.remove(self.car)
+        self.canvas.remove(self.enemys[i])
+        self.canvas.add(old_car)
+        self.canvas.add(old_enemy)
 
     def update_enemys(self):
         for i in range(0, self.number_enemy):
@@ -451,15 +454,6 @@ class GameWidget(Widget):
             x4, y4 = self.transform(xmax, ymin)
             distance_x = math.dist((x1, y1), (x4, y4))
             enemy.size = [distance_x * 0.45, distance_x * 0.45 * 0.7]
-            # print(
-            #     i,
-            #     "xmin",
-            #     (xmin),
-            #     "xmax",
-            #     (xmax),
-            #     self.vertical_lines[3].points[0],
-            #     self.get_line_x_from_index(self.V_NB_LINES / 2 + 0.5),
-            # )
 
             if enemy_coordinates[0] < 0:
                 enemy.pos = [x4 - distance_x / 2, y1]
@@ -468,11 +462,9 @@ class GameWidget(Widget):
             else:
                 enemy.pos = [x1 + enemy.size[0] / 2, y1]
 
-        # if self.enemys[0].pos[1] < self.car.pos[1]:
-        #     print(self.canvas)
-        # self.canvas.remove(self.car)
-        # with self.canvas
-        # self.re_draw(enemy)
+            # draw new z index car and enemy
+            if self.enemys[i].pos[1] < self.car.pos[1]:
+                self.re_draw_behide_car(i)
 
     # line
     def init_vertical_lines(self):
