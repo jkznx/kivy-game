@@ -9,16 +9,15 @@ Config.set("graphics", "resizable", False)
 # Set fixed window size
 Config.set("graphics", "width", str(SCREEN_W))
 Config.set("graphics", "height", str(SCREEN_H))
-
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.graphics import Rectangle, Color, Ellipse, Triangle, Line
 from kivy.properties import NumericProperty
+from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.clock import Clock
 from random import randint
@@ -76,50 +75,7 @@ class StartScreen(Screen):
 
 
 class GameScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        layout = FloatLayout()
-
-        # Add buttons for difficulty selection
-        button_size = (
-            150 * min(SCREEN_W / 1440, SCREEN_H / 800),
-            50 * min(SCREEN_W / 1440, SCREEN_H / 800),
-        )
-        easy_button = Button(
-            text="Easy",
-            size_hint=(None, None),
-            size=button_size,
-            pos_hint={"center_x": 0.25, "center_y": 0.5},
-            on_press=lambda x: self.set_difficulty("easy"),
-        )
-        normal_button = Button(
-            text="Normal",
-            size_hint=(None, None),
-            size=button_size,
-            pos_hint={"center_x": 0.5, "center_y": 0.5},
-            on_press=lambda x: self.set_difficulty("normal"),
-        )
-        hard_button = Button(
-            text="Hard",
-            size_hint=(None, None),
-            size=button_size,
-            pos_hint={"center_x": 0.75, "center_y": 0.5},
-            on_press=lambda x: self.set_difficulty("hard"),
-        )
-
-
-        layout.add_widget(easy_button)
-        layout.add_widget(normal_button)
-        layout.add_widget(hard_button)
-
-        self.add_widget(layout)
-
-        self.game_widget = GameWidget()  # Initialize without specifying difficulty
-        self.add_widget(self.game_widget)
-
-    def set_difficulty(self, difficulty):
-        # Set the game difficulty
-        self.game_widget.difficulty = difficulty
+    pass
 
 
 class Car(Image):
@@ -140,7 +96,6 @@ class GameWidget(Widget):
 
     def __init__(self, difficulty="easy", **kwargs):
         super().__init__(**kwargs)
-        self.bind(pos=self.draw_my_stuff)
         self.bind(size=self.draw_my_stuff)
         self.difficulty = difficulty  # Assign the difficulty parameter here
         self.road_pos_y = self.height / 2 - 300 * min(SCREEN_W / 1440, SCREEN_H / 800)
@@ -160,6 +115,7 @@ class GameWidget(Widget):
         # Add hearts
         self.hearts = []
         heart_y = self.height / 2 + 600 * min(SCREEN_W / 1440, SCREEN_H / 800)  # Set y-coordinate for all hearts
+        heart_spacing = 100 * min(SCREEN_W / 1440, SCREEN_H / 800)  # Set the spacing between hearts
         for i in range(3):
             heart = Image(
                 source="./images/pixel_heart.png",
@@ -169,11 +125,12 @@ class GameWidget(Widget):
                 ),
             )
             heart.pos = (
-                self.width / 2 + 50 - (i) * 25 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                self.width / 2 + 200 - (i * heart_spacing),  # Adjust x-coordinate based on index and spacing
                 heart_y,
             )
             self.add_widget(heart)
             self.hearts.append(heart)
+
 
         # Pause label
         self.pause_label = Label(
@@ -375,34 +332,19 @@ class GameWidget(Widget):
                     texture=heart.texture, pos=heart.pos, size=heart.size
                 )
         
-        self.car = Car(self.car.x, self.car.y)
-        self.add_widget(self.car)
-
         # Draw time label
-        self.time_label = Label(
-            text=self.time_label.text,
-            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
-            font_name="./fonts/pixel_font.ttf",
-            pos=(
-                75 * min(SCREEN_W / 1440, SCREEN_H / 800),
-                self.height / 2 - 40 * min(SCREEN_W / 1440, SCREEN_H / 800),
-            ),
-            color=(1, 1, 1, 1),  # White color
+        self.time_label.text = f"Time: {int(self.time_label.text.split(': ')[-1])}"  # Update time
+        self.time_label.pos = (
+            20,
+            self.height - 40,  # Adjust position as needed
         )
-        self.add_widget(self.time_label)
 
         # Draw score label
-        self.score_label = Label(
-            text=self.score_label.text,
-            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
-            font_name="./fonts/pixel_font.ttf",
-            pos=(
-                self.width - 200 * min(SCREEN_W / 1440, SCREEN_H / 800),
-                self.height / 2 - 40 * min(SCREEN_W / 1440, SCREEN_H / 800),
-            ),
-            color=(1, 1, 1, 1),  # White color
+        self.score_label.text = f"Score: {self.score}"  # Update score
+        self.score_label.pos = (
+            self.width - 200 * min(SCREEN_W / 1440, SCREEN_H / 800),
+            self.height - 40,  # Adjust position as needed
         )
-        self.add_widget(self.score_label)
 
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
@@ -458,7 +400,11 @@ class ChocoboRacingApp(App):
         sm = ScreenManager()
         start_screen = StartScreen(name="start")
         game_screen = GameScreen(name="game")
-
+        
+        # Create an instance of GameWidget and add it to the game screen
+        game_widget = GameWidget()
+        game_screen.add_widget(game_widget)
+        
         sm.add_widget(start_screen)
         sm.add_widget(game_screen)
         return sm
