@@ -170,10 +170,18 @@ class OverScreen(Screen):
             text="Result Score: 0",
             font_size="40sp",
             font_name="./fonts/pixel_font.ttf",
-            pos_hint={"center_x": 0.5, "center_y": 0.7},
+            pos_hint={"center_x": 0.5, "center_y": 0.8},
             color=(1, 1, 1, 1),  # White color
         )
         layout.add_widget(self.result_label)
+
+        # Add Skull
+        skull = Image(
+            source="./images/skull.png", 
+            size=(30, 30),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+            )
+        self.add_widget(skull)
 
         # Play Again Button
         play_again_button = Button(
@@ -181,7 +189,7 @@ class OverScreen(Screen):
             font_name="./fonts/pixel_font.ttf",
             size_hint=(None, None),
             size=(200, 50),
-            pos_hint={"center_x": 0.5, "center_y": 0.4},
+            pos_hint={"center_x": 0.5, "center_y": 0.15},
         )
         play_again_button.bind(on_press=self.play_again)
         layout.add_widget(play_again_button)
