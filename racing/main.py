@@ -171,6 +171,23 @@ class GameWidget(Widget):
         self._keyboard.bind(on_key_up=self._on_key_up)
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
+    def restart(self):
+        self.pause_text = "p for pause"
+
+        self.floors_coordinates = []
+        for i in range(0, len(self.enemys)):
+            self.canvas.remove(self.enemys[i])
+        self.enemys = []
+        self.enemys_coordinates = []
+
+        self.current_direction_car = 0
+        self.current_offset_x = 0
+        self.current_offset_y = 0
+        self.current_y_loop = 0
+
+        self.DRIVING_SPEED = 0.3
+        self.generate_floors_coordinates()
+
     # keyboard
     def _on_keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down)
@@ -186,6 +203,9 @@ class GameWidget(Widget):
             self.DRIVING_SPEED += 0.01
         elif "s" == keycode[1]:
             self.DRIVING_SPEED -= 0.01
+        elif "n" == keycode[1]:
+            # wClock.unschedule(self.game_running)
+            self.restart()
         elif "p" == keycode[1]:
             global STATE_CURRENT
             if STATE_CURRENT == STATE_RESTART:
@@ -204,55 +224,54 @@ class GameWidget(Widget):
         self.current_direction_car = 0
 
     # background
-    def init_background(self): ...
+    def init_background(self):
+        with self.canvas.before:
+            # self.bg = Rectangle(
+            #     size=Window.size,
+            #     source="./images/racing_bg_3.png",
+            #     pos=(0, 0),
+            # )
+            # draw sky
+            Color(*[component / 255 for component in blue_sky])
+            self.sky = Rectangle(pos=(0, 0), size=(Window.size))
 
-    # with self.canvas.before:
-    #     # self.bg = Rectangle(
-    #     #     size=Window.size,
-    #     #     source="./images/racing_bg_3.png",
-    #     #     pos=(0, 0),
-    #     # )
-    #     # draw sky
-    #     Color(*[component / 255 for component in blue_sky])
-    #     self.sky = Rectangle(pos=(0, 0), size=(Window.size))
+            # cloud on sky
+            cloud_group_positions = [
+                (Window.size[0] * 0.2, Window.size[1] * 0.85),
+                (Window.size[0] * 0.5, Window.size[1] * 0.88),
+                (Window.size[0] * 0.8, Window.size[1] * 0.9),
+            ]
 
-    #     # cloud on sky
-    #     cloud_group_positions = [
-    #         (Window.size[0] * 0.2, Window.size[1] * 0.85),
-    #         (Window.size[0] * 0.5, Window.size[1] * 0.88),
-    #         (Window.size[0] * 0.8, Window.size[1] * 0.9),
-    #     ]
+            for cloud_pos_x, cloud_pos_y in cloud_group_positions:
+                for _ in range(30):
+                    cloud_size = randint(30, 120)
+                    cloud_color = white
 
-    #     for cloud_pos_x, cloud_pos_y in cloud_group_positions:
-    #         for _ in range(30):
-    #             cloud_size = randint(30, 120)
-    #             cloud_color = white
+                    Color(*[component / 255 for component in cloud_color])
+                    self.clound = Ellipse(
+                        pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
+                    )
+                    cloud_pos_x += randint(-30, 30)
+                    cloud_pos_y += randint(-10, 10)
 
-    #             Color(*[component / 255 for component in cloud_color])
-    #             self.clound = Ellipse(
-    #                 pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
-    #             )
-    #             cloud_pos_x += randint(-30, 30)
-    #             cloud_pos_y += randint(-10, 10)
+            # add sunset at the center of bottom sky
+            # Color(*[component / 255 for component in sunset_color])
+            # Ellipse(
+            #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
+            # )
 
-    #     # add sunset at the center of bottom sky
-    #     # Color(*[component / 255 for component in sunset_color])
-    #     # Ellipse(
-    #     #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
-    #     # )
-
-    #     # draw grass
-    #     Color(*[component / 255 for component in green_grass])
-    #     Rectangle(
-    #         pos=(0, 0),
-    #         size=(Window.size[0], Window.size[1] * 0.35 + 3),
-    #     )
-    #     self.pause = Label(
-    #         text=self.pause_text,
-    #         font_size="30sp",
-    #         font_name="./fonts/pixel_font.ttf",
-    #         pos=(600, 600),
-    #     )
+            # draw grass
+            Color(*[component / 255 for component in green_grass])
+            Rectangle(
+                pos=(0, 0),
+                size=(Window.size[0], Window.size[1] * 0.35 + 3),
+            )
+            self.pause = Label(
+                text=self.pause_text,
+                font_size="30sp",
+                font_name="./fonts/pixel_font.ttf",
+                pos=(600, 600),
+            )
 
     def update_background(self):
         # some update
@@ -348,16 +367,16 @@ class GameWidget(Widget):
         for i in range(0, self.number_segment):
             floor = self.floors[i]
             floor_coordinates = self.floors_coordinates[i]
-            xmin, ymin = self.get_floor_coordinates(
-                floor_coordinates[0], floor_coordinates[1]
-            )
-            xmax, ymax = self.get_floor_coordinates(
-                floor_coordinates[0] + 1, floor_coordinates[1] + 1
-            )
-            # xmin, ymin = self.get_floor_coordinates(start_index, floor_coordinates[1])
-            # xmax, ymax = self.get_floor_coordinates(
-            #     start_index + self.V_NB_LINES - 1, floor_coordinates[1] + 1
+            # xmin, ymin = self.get_floor_coordinates(
+            #     floor_coordinates[0], floor_coordinates[1]
             # )
+            # xmax, ymax = self.get_floor_coordinates(
+            #     floor_coordinates[0] + 1, floor_coordinates[1] + 1
+            # )
+            xmin, ymin = self.get_floor_coordinates(start_index, floor_coordinates[1])
+            xmax, ymax = self.get_floor_coordinates(
+                start_index + self.V_NB_LINES - 1, floor_coordinates[1] + 1
+            )
             x1, y1 = self.transform(xmin, ymin)
             x2, y2 = self.transform(xmin, ymax)
             x3, y3 = self.transform(xmax, ymax)
@@ -521,8 +540,8 @@ class GameWidget(Widget):
             self.update_enemys()
             if self.collision_car():
                 print("over")
-                Clock.unschedule(self.game_running)
-                return
+                # Clock.unschedule(self.game_running)
+                # return
         self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
