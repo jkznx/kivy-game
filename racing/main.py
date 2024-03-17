@@ -303,17 +303,16 @@ class GameWidget(Widget):
                         self.width,
                         instruction.pos[1]
                     )
-            elif isinstance(instruction, Image) and instruction.source == "./images/bird.gif":
-                # Update bird position
-                instruction.pos = (
-                    instruction.pos[0] - dt * self.bird_speed,
-                    instruction.pos[1]
-                )
-                # Wrap around if bird goes off-screen
-                if instruction.right < 0:
-                    instruction.right = self.width
-                
-        #print("Bird position:", self.bird.pos)
+
+    def update_bird(self, dt):
+        # Update bird position
+        self.bird.pos = (
+            self.bird.pos[0] - dt * self.bird_speed,
+            self.bird.pos[1]
+        )
+        # Wrap around if bird goes off-screen
+        if self.bird.right < 0:
+            self.bird.right = Window.width
 
     # time and score
     def update_time_and_score(self, dt):
@@ -466,7 +465,7 @@ class GameWidget(Widget):
                     400 * min(SCREEN_W / 1440, SCREEN_H / 800),
                 ),
             )
-            self.bird.pos = (Window.width / 2 + 300, Window.height / 2 + 250)
+            self.bird.pos = (Window.width / 2 + 300, Window.height / 2 + 200)
             self.add_widget(self.bird)
             # Color(*[component / 255 for component in sunset_color])
             # Ellipse(
@@ -825,8 +824,8 @@ class GameWidget(Widget):
                     self.HEART -= 1
                     self.Immortal = 3
 
-        self.update_background() #use this dont forgot remove
-
+        self.update_background()
+        self.update_bird(dt)
         self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
