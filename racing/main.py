@@ -43,8 +43,6 @@ def switch_screen():
         screen_manager.current = "start"
     if STATE_CURRENT == STATE_PLAY:
         screen_manager.current = "play"
-    if STATE_CURRENT == STATE_RESTART:
-        screen_manager.current = "stop"
     if STATE_CURRENT == STATE_GAMEOVER:
         screen_manager.current = "over"
 
@@ -94,6 +92,10 @@ class StartScreen(Screen):
 
 
 class GameScreen(Screen):
+    pass
+
+
+class MenuScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = FloatLayout()
@@ -128,7 +130,7 @@ class GameScreen(Screen):
         layout.add_widget(easy_button)
         layout.add_widget(normal_button)
         layout.add_widget(hard_button)
-        
+
         self.add_widget(layout)
 
         self.game_widget = GameWidget()
@@ -136,9 +138,6 @@ class GameScreen(Screen):
 
     def set_difficulty(self, difficulty_level):
         self.game_widget.difficulty_level = difficulty_level
-
-class StopScreen(Screen):
-    pass
 
 
 class OverScreen(Screen):
@@ -176,16 +175,9 @@ class OverScreen(Screen):
         global STATE_CURRENT
         STATE_CURRENT = STATE_PLAY
         switch_screen()
-        self.parent.get_screen("play").reset_game()  # Reset the game when play again is pressed
-
-
-class Car(Widget):
-
-    def __init__(self):
-        super(Car).__init__()
-        # self.source = "./images/car.png"
-        self.color = [0, 0, 1]
-        self.size = (100, 100)  # Adjusted size
+        self.parent.get_screen(
+            "play"
+        ).reset_game()  # Reset the game when play again is pressed
 
 
 class GameWidget(Widget):
@@ -253,10 +245,14 @@ class GameWidget(Widget):
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     def init_background(self):
-        self.bg1 = Image(source="./images/racing_bg_1.png", allow_stretch=True, keep_ratio=False)
+        self.bg1 = Image(
+            source="./images/racing_bg_1.png", allow_stretch=True, keep_ratio=False
+        )
         self.bg1.size = (self.width, self.height)
         self.add_widget(self.bg1)
-        self.bg2 = Image(source="./images/racing_bg_2.png", allow_stretch=True, keep_ratio=False)
+        self.bg2 = Image(
+            source="./images/racing_bg_2.png", allow_stretch=True, keep_ratio=False
+        )
         self.bg2.size = (self.width, self.height)
         self.bg2.pos = (0, self.height)
         self.add_widget(self.bg2)
@@ -303,12 +299,12 @@ class GameWidget(Widget):
             [self.car.x, self.car.y],
             [self.car.x + self.car.size[0], self.car.y + self.car.size[1]],
         ]
-    
+
         self.time_label = Label(
             text="Time: 0",
             font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
-            pos=(75, self.height/2 + 500),  # Adjust position as needed
+            pos=(75, self.height / 2 + 500),  # Adjust position as needed
             color=(1, 1, 1, 1),  # White color
         )
         self.add_widget(self.time_label)
@@ -320,8 +316,8 @@ class GameWidget(Widget):
             font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
             font_name="./fonts/pixel_font.ttf",
             pos=(
-                self.width/2 + 1450 * min(SCREEN_W / 1440, SCREEN_H / 800),
-                self.height/2 + 500,
+                self.width / 2 + 1450 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                self.height / 2 + 500,
             ),  # Adjust position as needed
             color=(1, 1, 1, 1),  # White color
         )
@@ -331,7 +327,9 @@ class GameWidget(Widget):
 
         # Add hearts
         self.hearts = []
-        heart_y = self.height / 2 + 1000 * min(SCREEN_W / 1440, SCREEN_H / 800)  # Set y-coordinate for all hearts
+        heart_y = self.height / 2 + 1000 * min(
+            SCREEN_W / 1440, SCREEN_H / 800
+        )  # Set y-coordinate for all hearts
         for i in range(3):
             heart = Image(
                 source="./images/pixel_heart.png",
@@ -350,10 +348,12 @@ class GameWidget(Widget):
     def set_difficulty(self, difficulty_level):
         self.difficulty = difficulty_level
 
-    #time and score
+    # time and score
     def update_time_and_score(self, dt):
         if not self.is_paused:
-            self.time_label.text = f"Time: {int(self.time_label.text.split(': ')[-1]) + 1}"  # Update time
+            self.time_label.text = (
+                f"Time: {int(self.time_label.text.split(': ')[-1]) + 1}"  # Update time
+            )
             if self.difficulty == "easy":
                 self.score += 10  # Increase score by 10 every second
             elif self.difficulty == "normal":
@@ -362,8 +362,8 @@ class GameWidget(Widget):
                 self.score += 30  # Increase score by 30 every second
             if self.score > 9999:
                 self.score = 9999  # Limit score to 9999
-            self.score_label.text = f"Score: {self.score}" # Update score
-    
+            self.score_label.text = f"Score: {self.score}"  # Update score
+
     def restart(self):
         Clock.unschedule(self.game_running)
 
@@ -416,7 +416,6 @@ class GameWidget(Widget):
                 # switch_screen()
                 Clock.unschedule(self.game_running)
             print("stop", self.pause_text)
-
 
     def _on_key_up(self, keyboard, keycode):
         self.current_direction_car = 0
@@ -804,90 +803,18 @@ class GameWidget(Widget):
             self.is_paused = False
             self.game_running = Clock.schedule_interval(self.update, 1 / 30)
             print("play")
-
-    def update(self, dt):
-        if self.is_paused:
-            return
-
-        # Background movement
-        self.bg1.y -= 2
-        self.bg2.y -= 2
-
-        if self.bg1.top <= 0:
-            self.bg1.pos = (0, self.bg2.top)
-        if self.bg2.top <= 0:
-            self.bg2.pos = (0, self.bg1.top)
-
-        # Floor
-        self.update_floors()
-        self.update_enemys()
-        self.update_car()
-
-    def update_floors(self):
-        self.current_offset_y += self.DRIVING_SPEED
-        if self.current_offset_y >= SCREEN_H * self.H_LINES_SPACING:
-            self.current_offset_y = 0
-            self.current_y_loop += 1
-            if self.current_y_loop >= self.number_segment:
-                self.current_y_loop = 0
-            self.generate_floors_coordinates_y()
-
-        for i in range(0, self.number_segment):
-            points = [
-                self.floors_coordinates[i][0][0],
-                self.floors_coordinates[i][0][1] - self.current_offset_y,
-                self.floors_coordinates[i][1][0],
-                self.floors_coordinates[i][1][1] - self.current_offset_y,
-                self.floors_coordinates[i][2][0],
-                self.floors_coordinates[i][2][1] - self.current_offset_y,
-                self.floors_coordinates[i][3][0],
-                self.floors_coordinates[i][3][1] - self.current_offset_y,
-            ]
-            self.floors[i].points = points
-
-    def update_enemys(self):
-        pass
-
-    def update_car(self):
-        self.car.x += self.current_direction_car
-
-        if self.car.x <= 0:
-            self.car.x = 0
-        elif self.car.right >= SCREEN_W:
-            self.car.right = SCREEN_W
-
-        self.car_coordinates = [
-            [self.car.x, self.car.y],
-            [self.car.right, self.car.top],
-        ]
-
-    def generate_floors_coordinates_y(self):
-        tmp_y = self.current_y_loop * (SCREEN_H * self.H_LINES_SPACING)
-        y = self.height + tmp_y
-
-        for i in range(0, self.number_segment):
-            x = i * (self.width / self.number_segment)
-            self.floors_coordinates[i] = [
-                [x, y],
-                [x + self.width / self.number_segment, y],
-                [
-                    x + self.width / self.number_segment,
-                    y - (self.height * self.H_LINES_SPACING),
-                ],
-                [x, y - (self.height * self.H_LINES_SPACING)],
-            ]
 class ChocoboRacingApp(App):
     def build(self):
         global screen_manager
         screen_manager = ScreenManager()
         start_screen = StartScreen(name="start")
         game_screen = GameScreen(name="play")
-        stop_screen = StopScreen(name="stop")
+        menu_screen = MenuScreen(name="menu")
         over_screen = OverScreen(name="over")
 
         screen_manager.add_widget(start_screen)
         screen_manager.add_widget(game_screen)
-        screen_manager.add_widget(stop_screen)
+        screen_manager.add_widget(menu_screen)
         screen_manager.add_widget(over_screen)
 
         return screen_manager
