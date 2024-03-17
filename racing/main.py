@@ -218,27 +218,58 @@ class GameWidget(Widget):
         self._keyboard.bind(on_key_up=self._on_key_up)
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
-    def restart(self):
-        Clock.unschedule(self.game_running)
+    def init_background(self):
+        self.bg1 = Image(source="./images/back.png", allow_stretch=True, keep_ratio=False)
+        self.bg1.size = (self.width, self.height)
+        self.add_widget(self.bg1)
+        self.bg2 = Image(source="./images/back.png", allow_stretch=True, keep_ratio=False)
+        self.bg2.size = (self.width, self.height)
+        self.bg2.pos = (0, self.height)
+        self.add_widget(self.bg2)
 
-        self.pause_text = "p for pause"
-        self.HEART = 3
-        self.Immortal = 0
-        self.floors_coordinates = []
-        for i in range(0, len(self.enemys)):
-            self.canvas.remove(self.enemys[i])
-        self.enemys = []
-        self.enemys_coordinates = []
+        self.perspective_point_x = self.center_x
+        self.perspective_point_y = self.center_y
 
-        self.current_direction_car = 0
-        self.current_offset_x = 0
-        self.current_offset_y = 0
-        self.current_y_loop = 0
+    def init_vertical_lines(self):
+        with self.canvas:
+            Color(1, 1, 1)
+            for i in range(0, self.V_NB_LINES):
+                self.vertical_lines.append(Line())
 
-        self.DRIVING_SPEED = 0.3
-        self.generate_floors_coordinates()
-        self.game_running = Clock.schedule_interval(self.update, 1 / 30)
+    def init_horizontal_lines(self):
+        with self.canvas:
+            Color(1, 1, 1)
+            for i in range(0, self.H_NB_LINES):
+                self.horizontal_lines.append(Line())
 
+    def init_floors(self):
+        with self.canvas:
+            Color(0, 0, 1)
+            for i in range(0, self.number_segment):
+                self.floors.append(Quad())
+
+    def generate_floors_coordinates(self):
+        for i in range(0, self.number_segment):
+            self.floors_coordinates.append([])
+
+    def init_enemys(self):
+        with self.canvas:
+            Color(1, 0, 0)
+            for i in range(0, self.number_enemy):
+                self.enemys.append(Triangle())
+
+    def init_car(self):
+        self.car = Car()
+        self.car.pos = (
+            SCREEN_CX - self.car.size[0] / 2,
+            SCREEN_CY - self.car.size[1] * 2,
+        )
+        self.add_widget(self.car)
+        self.car_coordinates = [
+            [self.car.x, self.car.y],
+            [self.car.x + self.car.size[0], self.car.y + self.car.size[1]],
+        ]
+    
         self.time_label = Label(
             text="Time: 0",
             font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
@@ -305,7 +336,28 @@ class GameWidget(Widget):
                 self.score += 30  # Increase score by 30 every second
             if self.score > 9999:
                 self.score = 9999  # Limit score to 9999
-            self.score_label.text = f"Score: {self.score}"  # Update score
+            self.score_label.text = f"Score: {self.score}" # Update score
+    
+    def restart(self):
+        Clock.unschedule(self.game_running)
+
+        self.pause_text = "p for pause"
+        self.HEART = 3
+        self.Immortal = 0
+        self.floors_coordinates = []
+        for i in range(0, len(self.enemys)):
+            self.canvas.remove(self.enemys[i])
+        self.enemys = []
+        self.enemys_coordinates = []
+
+        self.current_direction_car = 0
+        self.current_offset_x = 0
+        self.current_offset_y = 0
+        self.current_y_loop = 0
+
+        self.DRIVING_SPEED = 0.3
+        self.generate_floors_coordinates()
+        self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     # keyboard
     def _on_keyboard_closed(self):
@@ -338,6 +390,7 @@ class GameWidget(Widget):
                 # switch_screen()
                 Clock.unschedule(self.game_running)
             print("stop", self.pause_text)
+
 
     def _on_key_up(self, keyboard, keycode):
         self.current_direction_car = 0
@@ -722,22 +775,82 @@ class GameWidget(Widget):
             > self.car_coordinates[1][0]
         ):
             self.current_offset_x -= speed_x * time_factor
+            self.is_paused = False
+            self.game_running = Clock.schedule_interval(self.update, 1 / 30)
+            print("play")
 
-    def reset_game(self):
-        self.time_label.text = "Time: 0"
-        self.score = 0
-        self.score_label.text = "Score: 0"
-        self.road_pos_y = self.height / 2 - 300 * min(
-            SCREEN_W / 1440, SCREEN_H / 800
-        )
-        self.car.pos = (
-            SCREEN_W / 2 - 150 * min(SCREEN_W / 1440, SCREEN_H / 800),
-            0,
-        )
-        self.enemies = []
+    def update(self, dt):
+        if self.is_paused:
+            return
 
+        # Background movement
+        self.bg1.y -= 2
+        self.bg2.y -= 2
 
-class Chocobo_RacingApp(App):
+        if self.bg1.top <= 0:
+            self.bg1.pos = (0, self.bg2.top)
+        if self.bg2.top <= 0:
+            self.bg2.pos = (0, self.bg1.top)
+
+        # Floor
+        self.update_floors()
+        self.update_enemys()
+        self.update_car()
+
+    def update_floors(self):
+        self.current_offset_y += self.DRIVING_SPEED
+        if self.current_offset_y >= SCREEN_H * self.H_LINES_SPACING:
+            self.current_offset_y = 0
+            self.current_y_loop += 1
+            if self.current_y_loop >= self.number_segment:
+                self.current_y_loop = 0
+            self.generate_floors_coordinates_y()
+
+        for i in range(0, self.number_segment):
+            points = [
+                self.floors_coordinates[i][0][0],
+                self.floors_coordinates[i][0][1] - self.current_offset_y,
+                self.floors_coordinates[i][1][0],
+                self.floors_coordinates[i][1][1] - self.current_offset_y,
+                self.floors_coordinates[i][2][0],
+                self.floors_coordinates[i][2][1] - self.current_offset_y,
+                self.floors_coordinates[i][3][0],
+                self.floors_coordinates[i][3][1] - self.current_offset_y,
+            ]
+            self.floors[i].points = points
+
+    def update_enemys(self):
+        pass
+
+    def update_car(self):
+        self.car.x += self.current_direction_car
+
+        if self.car.x <= 0:
+            self.car.x = 0
+        elif self.car.right >= SCREEN_W:
+            self.car.right = SCREEN_W
+
+        self.car_coordinates = [
+            [self.car.x, self.car.y],
+            [self.car.right, self.car.top],
+        ]
+
+    def generate_floors_coordinates_y(self):
+        tmp_y = self.current_y_loop * (SCREEN_H * self.H_LINES_SPACING)
+        y = self.height + tmp_y
+
+        for i in range(0, self.number_segment):
+            x = i * (self.width / self.number_segment)
+            self.floors_coordinates[i] = [
+                [x, y],
+                [x + self.width / self.number_segment, y],
+                [
+                    x + self.width / self.number_segment,
+                    y - (self.height * self.H_LINES_SPACING),
+                ],
+                [x, y - (self.height * self.H_LINES_SPACING)],
+            ]
+class ChocoboRacingApp(App):
     def build(self):
         global screen_manager
         screen_manager = ScreenManager()
@@ -755,4 +868,4 @@ class Chocobo_RacingApp(App):
 
 
 if __name__ == "__main__":
-    Chocobo_RacingApp().run()
+    ChocoboRacingApp().run()
