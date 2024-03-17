@@ -95,7 +95,7 @@ class StartScreen(Screen):
         layout.add_widget(start_button)
         self.add_widget(layout)
 
-        self.start_sound = SoundLoader.load('./sounds/start_sound.wav')
+        self.start_sound = SoundLoader.load("./sounds/start_sound.wav")
         if self.start_sound:
             self.start_sound.loop = True
             self.start_sound.volume = 0.3
@@ -109,12 +109,14 @@ class StartScreen(Screen):
         if self.start_sound:
             self.start_sound.stop()
 
+
 class GameScreen(Screen):
     pass
 
 
 class MenuScreen(Screen):
-    game_sound = SoundLoader.load('./sounds/game_sound.mp3')
+    game_sound = SoundLoader.load("./sounds/game_sound.mp3")
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = FloatLayout()
@@ -176,6 +178,7 @@ class MenuScreen(Screen):
             MenuScreen.game_sound.volume = 0.2
             MenuScreen.game_sound.play()
 
+
 class OverScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -193,10 +196,10 @@ class OverScreen(Screen):
 
         # Add Skull
         skull = Image(
-            source="./images/skull.png", 
+            source="./images/skull.png",
             size=(30, 30),
             pos_hint={"center_x": 0.5, "center_y": 0.5},
-            )
+        )
         self.add_widget(skull)
 
         # Play Again Button
@@ -272,9 +275,11 @@ class GameWidget(Widget):
     copy_harts = []
     is_paused = False
 
+    hit_sound = SoundLoader.load("./sounds/hit_sound.wav")
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.bird_speed = 60 
+        self.bird_speed = 60
         self.init_background()
         self.clouds = []
         self.init_vertical_lines()
@@ -288,28 +293,19 @@ class GameWidget(Widget):
         self._keyboard.bind(on_key_up=self._on_key_up)
 
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
-        Clock.schedule_interval(self.update_clouds, 1/60)
+        Clock.schedule_interval(self.update_clouds, 1 / 60)
 
     def update_clouds(self, dt):
         # Update the positions of all Ellipse objects (clouds)
         for instruction in self.canvas.before.children[:]:
             if isinstance(instruction, Ellipse):
-                instruction.pos = (
-                    instruction.pos[0] - dt * 60,
-                    instruction.pos[1]
-                )
+                instruction.pos = (instruction.pos[0] - dt * 60, instruction.pos[1])
                 if instruction.pos[0] + instruction.size[0] < 0:
-                    instruction.pos = (
-                        self.width,
-                        instruction.pos[1]
-                    )
+                    instruction.pos = (self.width, instruction.pos[1])
 
     def update_bird(self, dt):
         # Update bird position
-        self.bird.pos = (
-            self.bird.pos[0] - dt * self.bird_speed,
-            self.bird.pos[1]
-        )
+        self.bird.pos = (self.bird.pos[0] - dt * self.bird_speed, self.bird.pos[1])
         # Wrap around if bird goes off-screen
         if self.bird.right < 0:
             self.bird.right = Window.width
@@ -454,8 +450,12 @@ class GameWidget(Widget):
                     Ellipse(
                         pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
                     )
-                    cloud_pos_x += randint(-40, 40) * min(SCREEN_W / 1440, SCREEN_H / 800)
-                    cloud_pos_y += randint(-10, 10) * min(SCREEN_W / 1440, SCREEN_H / 800)
+                    cloud_pos_x += randint(-40, 40) * min(
+                        SCREEN_W / 1440, SCREEN_H / 800
+                    )
+                    cloud_pos_y += randint(-10, 10) * min(
+                        SCREEN_W / 1440, SCREEN_H / 800
+                    )
 
             # Add bird
             self.bird = Image(
@@ -530,6 +530,7 @@ class GameWidget(Widget):
             self.copy_harts.append(heart)
 
     def update_background(self): ...
+
     # car
     def init_car(self):
         with self.canvas:
@@ -801,7 +802,6 @@ class GameWidget(Widget):
             self.opacity_car()
             self.Immortal -= dt
 
-        self.hit_sound = SoundLoader.load('./sounds/hit_sound.wav')
         if len(self.enemys_coordinates) != 0:
             self.update_enemys()
             if self.collision_car():
@@ -812,7 +812,7 @@ class GameWidget(Widget):
                     over_screen.set_result_score(self.score)
                     STATE_CURRENT = STATE_GAMEOVER
                     switch_screen()
-                    if MenuScreen.game_sound: 
+                    if MenuScreen.game_sound:
                         MenuScreen.game_sound.stop()
                     return
                 elif self.HEART > 0 and self.Immortal <= 0:
