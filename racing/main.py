@@ -109,8 +109,8 @@ class MenuScreen(Screen):
 
         # Add buttons for difficulty selection
         button_size = (
-            150 * min(SCREEN_W / 1440, SCREEN_H / 800),
-            50 * min(SCREEN_W / 1440, SCREEN_H / 800),
+            200 * min(SCREEN_W / 1440, SCREEN_H / 800),
+            200 * min(SCREEN_W / 1440, SCREEN_H / 800),
         )
         easy_button = Button(
             text="Easy",
@@ -119,6 +119,8 @@ class MenuScreen(Screen):
             pos_hint={"center_x": 0.25, "center_y": 0.5},
             on_press=lambda x: self.set_difficulty("easy"),
         )
+        easy_button.background_color = (0, 1, 0, 1)  # Green color
+
         normal_button = Button(
             text="Normal",
             size_hint=(None, None),
@@ -126,6 +128,8 @@ class MenuScreen(Screen):
             pos_hint={"center_x": 0.5, "center_y": 0.5},
             on_press=lambda x: self.set_difficulty("normal"),
         )
+        normal_button.background_color = (1, 1, 0, 1)  # Yellow color
+
         hard_button = Button(
             text="Hard",
             size_hint=(None, None),
@@ -133,6 +137,17 @@ class MenuScreen(Screen):
             pos_hint={"center_x": 0.75, "center_y": 0.5},
             on_press=lambda x: self.set_difficulty("hard"),
         )
+        hard_button.background_color = (1, 0, 0, 1)  # Red color
+
+        self.select_difficulty = Label(
+            text="Please Select Difficulty",
+            font_size="40sp",
+            font_name="./fonts/pixel_font.ttf",
+            pos_hint={"center_x": 0.5, "center_y": 0.7},
+            color=(1, 1, 1, 1),  # White color
+        )
+        layout.add_widget(self.select_difficulty)
+
 
         layout.add_widget(easy_button)
         layout.add_widget(normal_button)
@@ -140,11 +155,10 @@ class MenuScreen(Screen):
         self.add_widget(layout)
 
     def set_difficulty(self, difficulty_level):
-        global Level,STATE_CURRENT
-        Level=difficulty_level
-        STATE_CURRENT=STATE_PLAY
+        global Level, STATE_CURRENT
+        Level = difficulty_level
+        STATE_CURRENT = STATE_PLAY
         switch_screen()
-
 
 class OverScreen(Screen):
     def __init__(self, **kwargs):
