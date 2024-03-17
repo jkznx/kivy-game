@@ -64,12 +64,12 @@ class StartScreen(Screen):
             pos_hint={"x": 0.4, "y": 0.1},  # start_Btn pos
             background_color=(0, 0, 0, 1),  # black button
         )
-        start_button.bind(on_press=self.start_game)
+        start_button.bind(on_press=self.go_to_game_screen)
         layout.add_widget(game_title)
         layout.add_widget(start_button)
         self.add_widget(layout)
 
-    def start_game(self, instance):
+    def go_to_game_screen(self, instance):
         self.manager.current = "game"
 
 
@@ -110,15 +110,21 @@ class GameScreen(Screen):
 
     def set_difficulty_easy(self, instance):
         # Set the game difficulty to easy
-        pass
+        game_widget = self.manager.get_screen("game").children[0]
+        game_widget.car_speed = 200
+        Clock.schedule_interval(game_widget.update_time_and_score, 1)
 
     def set_difficulty_normal(self, instance):
         # Set the game difficulty to normal
-        pass
+        game_widget = self.manager.get_screen("game").children[0]
+        game_widget.car_speed = 200
+        Clock.schedule_interval(game_widget.update_time_and_score, 1 / 2)
 
     def set_difficulty_hard(self, instance):
         # Set the game difficulty to hard
-        pass
+        game_widget = self.manager.get_screen("game").children[0]
+        game_widget.car_speed = 200
+        Clock.schedule_interval(game_widget.update_time_and_score, 1 / 5)
 
 
 class Car(Image):
@@ -297,7 +303,7 @@ class GameWidget(Widget):
                 ]
             )
 
-           # Draw road
+            # Draw road
             road_width = 800 * min(SCREEN_W / 1440, SCREEN_H / 800) 
             road_height = min(self.height * 0.8, self.road_pos_y + 900 * min(SCREEN_W / 1440, SCREEN_H / 800))
             road_pos_x = self.width / 2 - road_width / 2  # Center the road
@@ -372,25 +378,17 @@ class GameWidget(Widget):
 
     def _on_key_up(self, keyboard, keycode):
         text = keycode[1]
-
         if text in self.pressed_keys:
             self.pressed_keys.remove(text)
 
 
 class Chocobo_Racing(App):
     def build(self):
-        screen_manager = ScreenManager()
-        start_screen = StartScreen(name="start")
-        game_screen = GameScreen(name="game")
-        game_widget = GameWidget()
-
-        screen_manager.add_widget(start_screen)
-        screen_manager.add_widget(game_screen)
-        game_screen.add_widget(game_widget)
-
-        return screen_manager
+        sm = ScreenManager()
+        sm.add_widget(StartScreen(name="start"))
+        sm.add_widget(GameScreen(name="game"))
+        return sm
 
 
 if __name__ == "__main__":
-    app = Chocobo_Racing()
-    app.run()
+    Chocobo_Racing().run()
