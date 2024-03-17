@@ -183,8 +183,7 @@ class OverScreen(Screen):
 class GameWidget(Widget):
     # keyboard input
     # from user_actions import _on_key_down, _on_key_up, _on_keyboard_closed
-    difficulty = StringProperty("easy")  # Default difficulty level
-    score_increment = 10  # Default score increment value
+
     # view
     from tranforms import transform, transform_2D, transform_perspective
 
@@ -226,11 +225,11 @@ class GameWidget(Widget):
 
     HEART = 3
     Immortal = 0
+    is_paused = False
+    difficulty = "easy"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self.is_paused = False
 
         self.init_background()
         self.init_vertical_lines()
@@ -243,107 +242,6 @@ class GameWidget(Widget):
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
-
-    def init_background(self):
-        self.bg1 = Image(
-            source="./images/racing_bg_1.png", allow_stretch=True, keep_ratio=False
-        )
-        self.bg1.size = (self.width, self.height)
-        self.add_widget(self.bg1)
-        self.bg2 = Image(
-            source="./images/racing_bg_2.png", allow_stretch=True, keep_ratio=False
-        )
-        self.bg2.size = (self.width, self.height)
-        self.bg2.pos = (0, self.height)
-        self.add_widget(self.bg2)
-
-        self.perspective_point_x = self.center_x
-        self.perspective_point_y = self.center_y
-
-    def init_vertical_lines(self):
-        with self.canvas:
-            Color(1, 1, 1)
-            for i in range(0, self.V_NB_LINES):
-                self.vertical_lines.append(Line())
-
-    def init_horizontal_lines(self):
-        with self.canvas:
-            Color(1, 1, 1)
-            for i in range(0, self.H_NB_LINES):
-                self.horizontal_lines.append(Line())
-
-    def init_floors(self):
-        with self.canvas:
-            Color(0, 0, 1)
-            for i in range(0, self.number_segment):
-                self.floors.append(Quad())
-
-    def generate_floors_coordinates(self):
-        for i in range(0, self.number_segment):
-            self.floors_coordinates.append([])
-
-    def init_enemys(self):
-        with self.canvas:
-            Color(1, 0, 0)
-            for i in range(0, self.number_enemy):
-                self.enemys.append(Triangle())
-
-    def init_car(self):
-        self.car = Car()
-        self.car.pos = (
-            SCREEN_CX - self.car.size[0] / 2,
-            SCREEN_CY - self.car.size[1] * 2,
-        )
-        self.add_widget(self.car)
-        self.car_coordinates = [
-            [self.car.x, self.car.y],
-            [self.car.x + self.car.size[0], self.car.y + self.car.size[1]],
-        ]
-
-        self.time_label = Label(
-            text="Time: 0",
-            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
-            font_name="./fonts/pixel_font.ttf",
-            pos=(75, self.height / 2 + 500),  # Adjust position as needed
-            color=(1, 1, 1, 1),  # White color
-        )
-        self.add_widget(self.time_label)
-
-        # Score label
-        self.score = 0
-        self.score_label = Label(
-            text="Score: 0",
-            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
-            font_name="./fonts/pixel_font.ttf",
-            pos=(
-                self.width / 2 + 1450 * min(SCREEN_W / 1440, SCREEN_H / 800),
-                self.height / 2 + 500,
-            ),  # Adjust position as needed
-            color=(1, 1, 1, 1),  # White color
-        )
-        self.add_widget(self.score_label)
-
-        Clock.schedule_interval(self.update_time_and_score, 1)
-
-        # Add hearts
-        self.hearts = []
-        heart_y = self.height / 2 + 1000 * min(
-            SCREEN_W / 1440, SCREEN_H / 800
-        )  # Set y-coordinate for all hearts
-        for i in range(3):
-            heart = Image(
-                source="./images/pixel_heart.png",
-                size=(
-                    75 * min(SCREEN_W / 1440, SCREEN_H / 800),
-                    75 * min(SCREEN_W / 1440, SCREEN_H / 800),
-                ),
-            )
-            heart.pos = (
-                self.width / 2 + 50 - (i) * 25 * min(SCREEN_W / 1440, SCREEN_H / 800),
-                heart_y,
-            )
-            self.add_widget(heart)
-            self.hearts.append(heart)
 
     def set_difficulty(self, difficulty_level):
         self.difficulty = difficulty_level
@@ -363,6 +261,27 @@ class GameWidget(Widget):
             if self.score > 9999:
                 self.score = 9999  # Limit score to 9999
             self.score_label.text = f"Score: {self.score}"  # Update score
+
+    def restart(self):
+        Clock.unschedule(self.game_running)
+
+        self.pause_text = "p for pause"
+        self.HEART = 3
+        self.Immortal = 0
+        self.floors_coordinates = []
+        for i in range(0, len(self.enemys)):
+            self.canvas.remove(self.enemys[i])
+        self.enemys = []
+        self.enemys_coordinates = []
+
+        self.current_direction_car = 0
+        self.current_offset_x = 0
+        self.current_offset_y = 0
+        self.current_y_loop = 0
+
+        self.DRIVING_SPEED = 0.3
+        self.generate_floors_coordinates()
+        self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     def restart(self):
         Clock.unschedule(self.game_running)
@@ -469,18 +388,50 @@ class GameWidget(Widget):
                 font_name="./fonts/pixel_font.ttf",
                 pos=(600, 600),
             )
-            self.im = Label(
-                text=str(self.Immortal),
-                font_size="30sp",
-                font_name="./fonts/pixel_font.ttf",
-                pos=(800, 500),
+        self.time_label = Label(
+            text="Time: 0",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
+            font_name="./fonts/pixel_font.ttf",
+            pos=(75, self.height / 2 + 500),  # Adjust position as needed
+            color=(1, 1, 1, 1),  # White color
+        )
+        self.add_widget(self.time_label)
+
+        # Score label
+        self.score = 0
+        self.score_label = Label(
+            text="Score: 0",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
+            font_name="./fonts/pixel_font.ttf",
+            pos=(
+                self.width / 2 + 1450 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                self.height / 2 + 500,
+            ),  # Adjust position as needed
+            color=(1, 1, 1, 1),  # White color
+        )
+        self.add_widget(self.score_label)
+
+        Clock.schedule_interval(self.update_time_and_score, 1)
+
+        # Add hearts
+        self.hearts = []
+        heart_y = self.height / 2 + 1000 * min(
+            SCREEN_W / 1440, SCREEN_H / 800
+        )  # Set y-coordinate for all hearts
+        for i in range(3):
+            heart = Image(
+                source="./images/pixel_heart.png",
+                size=(
+                    75 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                    75 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                ),
             )
-            self.heart = Label(
-                text=str(self.HEART),
-                font_size="30sp",
-                font_name="./fonts/pixel_font.ttf",
-                pos=(800, 400),
+            heart.pos = (
+                self.width / 2 + 50 - (i) * 25 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                heart_y,
             )
+            self.add_widget(heart)
+            self.hearts.append(heart)
 
     def update_background(self): ...
 
@@ -750,9 +701,8 @@ class GameWidget(Widget):
         self.update_vertical_lines()
         self.update_horizontal_lines()
         self.update_floors()
-        self.update_car()
-
         if self.Immortal > 0:
+            print(self.Immortal)
             self.opacity_car()
             self.Immortal -= dt
 
@@ -770,6 +720,7 @@ class GameWidget(Widget):
 
         self.update_background()
 
+        self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
 
@@ -800,9 +751,6 @@ class GameWidget(Widget):
             > self.car_coordinates[1][0]
         ):
             self.current_offset_x -= speed_x * time_factor
-            self.is_paused = False
-            self.game_running = Clock.schedule_interval(self.update, 1 / 30)
-            print("play")
 
 
 class Chocobo_RacingApp(App):
@@ -811,13 +759,13 @@ class Chocobo_RacingApp(App):
         screen_manager = ScreenManager()
         start_screen = StartScreen(name="start")
         game_screen = GameScreen(name="play")
-        menu_screen = MenuScreen(name="menu")
-        over_screen = OverScreen(name="over")
+        # menu_screen = MenuScreen(name="menu")
+        # over_screen = OverScreen(name="over")
 
         screen_manager.add_widget(start_screen)
         screen_manager.add_widget(game_screen)
-        screen_manager.add_widget(menu_screen)
-        screen_manager.add_widget(over_screen)
+        # screen_manager.add_widget(menu_screen)
+        # screen_manager.add_widget(over_screen)
 
         return screen_manager
 
