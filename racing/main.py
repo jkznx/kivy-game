@@ -290,6 +290,20 @@ class GameWidget(Widget):
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
         Clock.schedule_interval(self.update_clouds, 1/60)
 
+    def update_clouds(self, dt):
+        # Update the positions of all Ellipse objects (clouds)
+        for instruction in self.canvas.before.children[:]:
+            if isinstance(instruction, Ellipse):
+                instruction.pos = (
+                    instruction.pos[0] - dt * 60,
+                    instruction.pos[1]
+                )
+                if instruction.pos[0] + instruction.size[0] < 0:
+                    instruction.pos = (
+                        self.width,
+                        instruction.pos[1]
+                    )
+
     # time and score
     def update_time_and_score(self, dt):
         global Level
@@ -423,14 +437,14 @@ class GameWidget(Widget):
             # Draw clouds
             for cloud_pos_x, cloud_pos_y in cloud_group_positions:
                 for _ in range(30):
-                    cloud_size = randint(30, 120) * min(SCREEN_W / 1440, SCREEN_H / 800)
+                    cloud_size = randint(60, 180) * min(SCREEN_W / 1440, SCREEN_H / 800)
                     cloud_color = white
 
                     Color(*[component / 255 for component in cloud_color])
                     Ellipse(
                         pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
                     )
-                    cloud_pos_x += randint(-30, 30) * min(SCREEN_W / 1440, SCREEN_H / 800)
+                    cloud_pos_x += randint(-40, 40) * min(SCREEN_W / 1440, SCREEN_H / 800)
                     cloud_pos_y += randint(-10, 10) * min(SCREEN_W / 1440, SCREEN_H / 800)
 
             # Draw sunset
@@ -503,20 +517,6 @@ class GameWidget(Widget):
             self.add_widget(heart)
             self.hearts.append(heart)
             self.copy_harts.append(heart)
-
-    def update_clouds(self, dt):
-        # Update the positions of all Ellipse objects (clouds)
-        for instruction in self.canvas.before.children[:]:
-            if isinstance(instruction, Ellipse):
-                instruction.pos = (
-                    instruction.pos[0] - dt * self.DRIVING_SPEED,
-                    instruction.pos[1]
-                )
-                if instruction.pos[0] + instruction.size[0] < 0:
-                    instruction.pos = (
-                        self.width,
-                        instruction.pos[1]
-                    )   
 
     def update_background(self): ...
     # car
