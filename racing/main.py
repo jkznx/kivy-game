@@ -98,6 +98,7 @@ class StartScreen(Screen):
         self.start_sound = SoundLoader.load('./sounds/start_sound.wav')
         if self.start_sound:
             self.start_sound.loop = True
+            self.start_sound.volume = 0.3
             self.start_sound.play()
 
     def start_game(self, instance):
@@ -113,6 +114,7 @@ class GameScreen(Screen):
 
 
 class MenuScreen(Screen):
+    game_sound = SoundLoader.load('./sounds/game_sound.mp3')
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = FloatLayout()
@@ -163,17 +165,16 @@ class MenuScreen(Screen):
         layout.add_widget(hard_button)
         self.add_widget(layout)
 
-        self.game_sound = SoundLoader.load('./sounds/game_sound.mp3')
-
     def set_difficulty(self, difficulty_level):
         global Level, STATE_CURRENT
         Level = difficulty_level
         STATE_CURRENT = STATE_PLAY
         switch_screen()
 
-        if self.game_sound:
-            self.game_sound.loop = True
-            self.game_sound.play()
+        if MenuScreen.game_sound:
+            MenuScreen.game_sound.loop = True
+            MenuScreen.game_sound.volume = 0.2
+            MenuScreen.game_sound.play()
 
 class OverScreen(Screen):
     def __init__(self, **kwargs):
@@ -789,6 +790,7 @@ class GameWidget(Widget):
             self.opacity_car()
             self.Immortal -= dt
 
+        self.hit_sound = SoundLoader.load('./sounds/hit_sound.wav')
         if len(self.enemys_coordinates) != 0:
             self.update_enemys()
             if self.collision_car():
@@ -799,9 +801,12 @@ class GameWidget(Widget):
                     over_screen.set_result_score(self.score)
                     STATE_CURRENT = STATE_GAMEOVER
                     switch_screen()
+                    if MenuScreen.game_sound: 
+                        MenuScreen.game_sound.stop()
                     return
                 elif self.HEART > 0 and self.Immortal <= 0:
                     print("hit")
+                    self.hit_sound.play()
                     if self.hearts:
                         self.remove_widget(self.hearts[0])
                         self.hearts.pop(0)
