@@ -19,7 +19,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.graphics import Line, Quad, Triangle
-from kivy.properties import NumericProperty
+from kivy.properties import NumericProperty, StringProperty
 from kivy.core.image import Image as Im
 from kivy.uix.image import Image
 from random import randint, randrange, choice
@@ -94,8 +94,48 @@ class StartScreen(Screen):
 
 
 class GameScreen(Screen):
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = FloatLayout()
 
+        # Add buttons for difficulty selection
+        button_size = (
+            150 * min(SCREEN_W / 1440, SCREEN_H / 800),
+            50 * min(SCREEN_W / 1440, SCREEN_H / 800),
+        )
+        easy_button = Button(
+            text="Easy",
+            size_hint=(None, None),
+            size=button_size,
+            pos_hint={"center_x": 0.25, "center_y": 0.5},
+            on_press=lambda x: self.set_difficulty("easy"),
+        )
+        normal_button = Button(
+            text="Normal",
+            size_hint=(None, None),
+            size=button_size,
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+            on_press=lambda x: self.set_difficulty("normal"),
+        )
+        hard_button = Button(
+            text="Hard",
+            size_hint=(None, None),
+            size=button_size,
+            pos_hint={"center_x": 0.75, "center_y": 0.5},
+            on_press=lambda x: self.set_difficulty("hard"),
+        )
+
+        layout.add_widget(easy_button)
+        layout.add_widget(normal_button)
+        layout.add_widget(hard_button)
+        
+        self.add_widget(layout)
+
+        self.game_widget = GameWidget()
+        self.add_widget(self.game_widget)
+
+    def set_difficulty(self, difficulty_level):
+        self.game_widget.difficulty_level = difficulty_level
 
 class StopScreen(Screen):
     pass
@@ -116,7 +156,8 @@ class Car(Widget):
 class GameWidget(Widget):
     # keyboard input
     # from user_actions import _on_key_down, _on_key_up, _on_keyboard_closed
-
+    difficulty = StringProperty("easy")  # Default difficulty level
+    score_increment = 10  # Default score increment value
     # view
     from tranforms import transform, transform_2D, transform_perspective
 
@@ -159,6 +200,8 @@ class GameWidget(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.is_paused = False
+
         self.init_background()
         self.init_vertical_lines()
         self.init_horizontal_lines()
@@ -170,6 +213,74 @@ class GameWidget(Widget):
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
+
+        self.time_label = Label(
+            text="Time: 0",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
+            font_name="./fonts/pixel_font.ttf",
+            pos=(75, self.height/2 + 500),  # Adjust position as needed
+            color=(1, 1, 1, 1),  # White color
+        )
+        self.add_widget(self.time_label)
+
+        # Score label
+        self.score = 0
+        self.score_label = Label(
+            text="Score: 0",
+            font_size=int(50 * min(SCREEN_W / 1440, SCREEN_H / 800)),
+            font_name="./fonts/pixel_font.ttf",
+            pos=(
+                self.width/2 + 1450 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                self.height/2 + 500,
+            ),  # Adjust position as needed
+            color=(1, 1, 1, 1),  # White color
+        )
+        self.add_widget(self.score_label)
+
+        Clock.schedule_interval(self.update_time_and_score, 1)
+
+        # Add hearts
+        self.hearts = []
+        heart_y = self.height / 2 + 1000 * min(SCREEN_W / 1440, SCREEN_H / 800)  # Set y-coordinate for all hearts
+        for i in range(3):
+            heart = Image(
+                source="./images/pixel_heart.png",
+                size=(
+                    75 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                    75 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                ),
+            )
+            heart.pos = (
+                self.width / 2 + 50 - (i) * 25 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                heart_y,
+            )
+            self.add_widget(heart)
+            self.hearts.append(heart)
+
+    def set_difficulty(self, difficulty_level):
+        self.difficulty = difficulty_level
+
+        # Update score increment rate based on difficulty
+        if self.difficulty == "easy":
+            self.score += 10
+        elif self.difficulty == "normal":
+            self.score += 20
+        elif self.difficulty == "hard":
+            self.score += 30
+
+    #time and score
+    def update_time_and_score(self, dt):
+        if not self.is_paused:
+            self.time_label.text = f"Time: {int(self.time_label.text.split(': ')[-1]) + 1}"  # Update time
+            if self.difficulty == "easy":
+                self.score += 10  # Increase score by 10 every second
+            elif self.difficulty == "normal":
+                self.score += 20  # Increase score by 20 every second
+            elif self.difficulty == "hard":
+                self.score += 30  # Increase score by 30 every second
+            if self.score > 9999:
+                self.score = 9999  # Limit score to 9999
+            self.score_label.text = f"Score: {self.score}"  # Update score
 
     # keyboard
     def _on_keyboard_closed(self):
@@ -554,6 +665,19 @@ class GameWidget(Widget):
             > self.car_coordinates[1][0]
         ):
             self.current_offset_x -= speed_x * time_factor
+
+    def reset_game(self):
+        self.time_label.text = "Time: 0"
+        self.score = 0
+        self.score_label.text = "Score: 0"
+        self.road_pos_y = self.height / 2 - 300 * min(
+            SCREEN_W / 1440, SCREEN_H / 800
+        )
+        self.car.pos = (
+            SCREEN_W / 2 - 150 * min(SCREEN_W / 1440, SCREEN_H / 800),
+            0,
+        )
+        self.enemies = []
 
 
 class Chocobo_RacingApp(App):
