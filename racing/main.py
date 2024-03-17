@@ -106,8 +106,9 @@ class OverScreen(Screen):
 
 
 class Car(Widget):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+
+    def __init__(self):
+        super(Car).__init__()
         # self.source = "./images/car.png"
         self.color = [0, 0, 1]
         self.size = (100, 100)  # Adjusted size
@@ -133,7 +134,7 @@ class GameWidget(Widget):
     H_LINES_SPACING = 0.1  # percentage in screen height
     horizontal_lines = []
 
-    DRIVING_SPEED = 0.3
+    DRIVING_SPEED = 0.75
     current_offset_y = 0
     current_y_loop = 0
 
@@ -148,13 +149,16 @@ class GameWidget(Widget):
     car = None
     # left right
     car_coordinates = [(0, 0), (0, 0)]
-
+    car_opacity = 1
     number_enemy = 10
     enemys = []
     enemys_coordinates = []
 
     car_hitbox = 0.1
     enemys_hitbox = 0.25
+
+    HEART = 3
+    Immortal = 0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -172,8 +176,11 @@ class GameWidget(Widget):
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     def restart(self):
-        self.pause_text = "p for pause"
+        Clock.unschedule(self.game_running)
 
+        self.pause_text = "p for pause"
+        self.HEART = 3
+        self.Immortal = 0
         self.floors_coordinates = []
         for i in range(0, len(self.enemys)):
             self.canvas.remove(self.enemys[i])
@@ -187,6 +194,7 @@ class GameWidget(Widget):
 
         self.DRIVING_SPEED = 0.3
         self.generate_floors_coordinates()
+        self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     # keyboard
     def _on_keyboard_closed(self):
@@ -272,14 +280,25 @@ class GameWidget(Widget):
                 font_name="./fonts/pixel_font.ttf",
                 pos=(600, 600),
             )
+            self.im = Label(
+                text=str(self.Immortal),
+                font_size="30sp",
+                font_name="./fonts/pixel_font.ttf",
+                pos=(800, 500),
+            )
+            self.heart = Label(
+                text=str(self.HEART),
+                font_size="30sp",
+                font_name="./fonts/pixel_font.ttf",
+                pos=(800, 400),
+            )
 
-    def update_background(self):
-        # some update
-        ...
+    def update_background(self): ...
 
     # car
     def init_car(self):
         with self.canvas:
+            Color(1, 1, 1, self.car_opacity)
             self.car = Rectangle(
                 fit_mode="cover",
                 source="./images/car_cut.png",
@@ -526,23 +545,42 @@ class GameWidget(Widget):
             x2, y2 = self.transform(xmax, line_y)
             self.horizontal_lines[i].points = [x1, y1, x2, y2]
 
+    def opacity_car(self):
+        old_car = self.car
+        self.canvas.remove(self.car)
+        self.canvas.add(Color(1, 1, 1, 0.5))
+        self.canvas.add(old_car)
+        self.canvas.add(Color(1, 1, 1, 1))
+
     # main update
     def update(self, dt):
         if STATE_CURRENT == STATE_INIT:
             return
         # real time
         time_factor = dt * 30
-        self.update_background()
         self.update_vertical_lines()
         self.update_horizontal_lines()
         self.update_floors()
+        self.update_car()
+
+        if self.Immortal > 0:
+            self.opacity_car()
+            self.Immortal -= dt
+
         if len(self.enemys_coordinates) != 0:
             self.update_enemys()
             if self.collision_car():
-                print("over")
-                # Clock.unschedule(self.game_running)
-                # return
-        self.update_car()
+                if self.HEART <= 0 and self.Immortal <= 0:
+                    print("over")
+                    Clock.unschedule(self.game_running)
+                    return
+                elif self.HEART > 0 and self.Immortal <= 0:
+                    print("hit")
+                    self.HEART -= 1
+                    self.Immortal = 3
+
+        self.update_background()
+
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
 
@@ -551,7 +589,7 @@ class GameWidget(Widget):
             self.current_offset_y -= spacing_y
             self.current_y_loop += 1
             self.generate_floors_coordinates()
-            if self.current_y_loop > 5 and self.current_y_loop % 3 == 0:
+            if self.current_y_loop > 5 and self.current_y_loop % 4 == 0:
                 self.generate_enemys_coordinates()
             print("loop : " + str(self.current_y_loop))
         speed_x = self.current_direction_car * self.width / 100
