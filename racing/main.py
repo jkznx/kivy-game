@@ -22,7 +22,7 @@ from kivy.graphics import Line, Quad, Triangle
 from kivy.properties import NumericProperty
 from kivy.core.image import Image as Im
 from kivy.uix.image import Image
-from random import randint, randrange
+from random import randint, randrange, choice
 import math
 
 SCREEN_CX = SCREEN_W / 2
@@ -178,15 +178,15 @@ class GameWidget(Widget):
         self._keyboard = None
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
-        if "a" in keycode[1]:
+        if "a" == keycode[1]:
             self.current_direction_car = -self.CAR_MOVE_SPEED
-        elif "d" in keycode[1]:
+        elif "d" == keycode[1]:
             self.current_direction_car = self.CAR_MOVE_SPEED
-        elif "w" in keycode[1]:
+        elif "w" == keycode[1]:
             self.DRIVING_SPEED += 0.01
-        elif "s" in keycode[1]:
+        elif "s" == keycode[1]:
             self.DRIVING_SPEED -= 0.01
-        elif "p" in keycode[1]:
+        elif "p" == keycode[1]:
             global STATE_CURRENT
             if STATE_CURRENT == STATE_RESTART:
                 self.pause_text = "p for pause"
@@ -261,7 +261,7 @@ class GameWidget(Widget):
     # car
     def init_car(self):
         with self.canvas:
-            self.car = Image(
+            self.car = Rectangle(
                 fit_mode="cover",
                 source="./images/car_cut.png",
             )
@@ -272,7 +272,7 @@ class GameWidget(Widget):
         right_x = self.perspective_point_x + self.car.size[0] / 2
         self.car_coordinates[0] = (left_x, y_car)
         self.car_coordinates[1] = (right_x, y_car)
-        self.car.size = (self.width * 0.22, self.height * 0.2)
+        self.car.size = (self.width * 0.2, self.height * 0.18)
         self.car.pos = [left_x, y_car]
 
     def collision_car(self):
@@ -316,11 +316,7 @@ class GameWidget(Widget):
     def init_floors(self):
         with self.canvas:
             for i in range(0, self.number_segment):
-                self.floors.append(
-                    Quad(
-                        # source="images/road.jpg"
-                    )
-                )
+                self.floors.append(Quad(source="images/road.jpg"))
 
     def get_floor_coordinates(self, fl_x, fl_y):
         fl_y = fl_y - self.current_y_loop
@@ -373,9 +369,19 @@ class GameWidget(Widget):
     def init_enemys(self):
         with self.canvas:
             for i in range(0, self.number_enemy):
-                # self.enemys.append(Quad(source="./images/car_3.png"))
-                Color(1, 0, 1)
-                self.enemys.append(Rectangle(source="./images/car_2.png"))
+                self.enemys.append(
+                    Rectangle(
+                        source=choice(
+                            [
+                                "./images/car_2_cut.png",
+                                "./images/car_3_cut.png",
+                                "./images/car_4_cut.png",
+                            ]
+                        ),
+                        pos=(-100, -100),
+                        fit_mode="cover",
+                    )
+                )
 
     def get_enemy_coordinates(self, emy_x, em_y):
         em_y = em_y - self.current_y_loop
@@ -392,7 +398,8 @@ class GameWidget(Widget):
         for i in range(len(self.enemys_coordinates) - 1, -1, -1):
             if self.enemys_coordinates[i][1] < self.current_y_loop:
                 del self.enemys_coordinates[i]
-
+                self.canvas.remove(self.enemys[i])
+                del self.enemys[i]
         # avoid duplicate enemy
         if len(self.enemys_coordinates) > 0:
             last_coordinates = self.enemys_coordinates[-1]
@@ -400,10 +407,32 @@ class GameWidget(Widget):
 
         # add new enemy by index pos of enemy
         for i in range(len(self.enemys_coordinates), self.number_enemy):
+            self.fill_enemy()
             self.enemys_coordinates.append(
                 (randint(start_index, start_index + self.V_NB_LINES - 2), last_y)
             )
             last_y += 1
+
+    def fill_enemy(self):
+        with self.canvas:
+            self.enemys.append(
+                Rectangle(
+                    source=choice(
+                        [
+                            "./images/car_2_cut.png",
+                            "./images/car_3_cut.png",
+                            "./images/car_4_cut.png",
+                        ]
+                    ),
+                    pos=(-100, -100),
+                    fit_mode="cover",
+                )
+            )
+
+    def re_draw(self, ins):
+        self.canvas.remove(ins)
+        with self.canvas:
+            ins
 
     def update_enemys(self):
         for i in range(0, self.number_enemy):
@@ -415,15 +444,35 @@ class GameWidget(Widget):
             xmax, ymax = self.get_enemy_coordinates(
                 enemy_coordinates[0] + 1, enemy_coordinates[1] + 1
             )
-
             #  2    3
             #
             #  1    4
             x1, y1 = self.transform(xmin, ymin)
             x4, y4 = self.transform(xmax, ymin)
-            distance = math.dist((x1, y1), (x4, y4))
-            enemy.size = [distance * 0.5, enemy.size[1]]
-            enemy.pos = [x1 + (distance * 0.25), y1]
+            distance_x = math.dist((x1, y1), (x4, y4))
+            enemy.size = [distance_x * 0.45, distance_x * 0.45 * 0.7]
+            # print(
+            #     i,
+            #     "xmin",
+            #     (xmin),
+            #     "xmax",
+            #     (xmax),
+            #     self.vertical_lines[3].points[0],
+            #     self.get_line_x_from_index(self.V_NB_LINES / 2 + 0.5),
+            # )
+
+            if enemy_coordinates[0] < 0:
+                enemy.pos = [x4 - distance_x / 2, y1]
+            elif enemy_coordinates[0] > 0:
+                enemy.pos = [x1, y1]
+            else:
+                enemy.pos = [x1 + enemy.size[0] / 2, y1]
+
+        # if self.enemys[0].pos[1] < self.car.pos[1]:
+        #     print(self.canvas)
+        # self.canvas.remove(self.car)
+        # with self.canvas
+        # self.re_draw(enemy)
 
     # line
     def init_vertical_lines(self):
@@ -473,8 +522,8 @@ class GameWidget(Widget):
             self.update_enemys()
             if self.collision_car():
                 print("over")
-                Clock.unschedule(self.game_running)
-                return
+                # Clock.unschedule(self.game_running)
+                # return
         self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
