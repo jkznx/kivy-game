@@ -10,7 +10,6 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.image import Image
 from kivy.uix.progressbar import ProgressBar
-from kivy.uix.asyncimage import AsyncImage
 from kivy.properties import NumericProperty
 
 from random import randint
@@ -99,14 +98,15 @@ class GameWidget(Widget):
         self.car = Car()
         self.add_widget(self.car)
 
-        self.bird = AsyncImage(source="./images/bird.gif", size=(100, 100))
+        self.bird = Image(source="./images/bird.gif", size=(200, 200))
         self.add_widget(self.bird)
 
-        # Add hearts
+         # Add hearts
         self.hearts = []
+        heart_y = self.height/2 + 600  # Set y-coordinate for all hearts
         for i in range(3):
             heart = Image(source="./images/pixel_heart.png", size=(50, 50))
-            heart.pos = (self.width - (i + 1) * 80, self.height/2 + 600)
+            heart.pos = (self.width/2 - (i) * 10, heart_y)
             self.add_widget(heart)
             self.hearts.append(heart)
         
@@ -272,7 +272,7 @@ class GameWidget(Widget):
             )
 
             # draw bird
-            self.bird.pos = (self.width / 2 - 200, self.height * 0.85)
+            self.bird.pos = (self.width / 2 + 250, self.height * 0.75)
             Rectangle(texture=self.bird.texture, pos=self.bird.pos, size=self.bird.size)
 
             # Draw hearts
