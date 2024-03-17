@@ -148,7 +148,6 @@ class MenuScreen(Screen):
         )
         layout.add_widget(self.select_difficulty)
 
-
         layout.add_widget(easy_button)
         layout.add_widget(normal_button)
         layout.add_widget(hard_button)
@@ -159,6 +158,7 @@ class MenuScreen(Screen):
         Level = difficulty_level
         STATE_CURRENT = STATE_PLAY
         switch_screen()
+
 
 class OverScreen(Screen):
     def __init__(self, **kwargs):
@@ -193,11 +193,9 @@ class OverScreen(Screen):
 
     def play_again(self, instance):
         global STATE_CURRENT
-        STATE_CURRENT = STATE_PLAY
+        STATE_CURRENT = STATE_LEVEL
+        game_screen.children[0].restart()
         switch_screen()
-        self.parent.get_screen(
-            "play"
-        ).reset_game()  # Reset the game when play again is pressed
 
 
 class GameWidget(Widget):
@@ -243,8 +241,11 @@ class GameWidget(Widget):
     car_hitbox = 0.1
     enemys_hitbox = 0.25
 
+    hearts = []  # List to store heart icons
+    heart_spacing = 100  # Spacing between heart icons
     HEART = 3
     Immortal = 0
+    copy_harts = []
     is_paused = False
 
     def __init__(self, **kwargs):
@@ -260,9 +261,7 @@ class GameWidget(Widget):
         self._keyboard = Window.request_keyboard(self._on_keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_key_down)
         self._keyboard.bind(on_key_up=self._on_key_up)
-        
-        self.hearts = []  # List to store heart icons
-        self.heart_spacing = 100  # Spacing between heart icons
+
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
     # time and score
@@ -274,21 +273,34 @@ class GameWidget(Widget):
             )
             if Level == "easy":
                 self.score += 10  # Increase score by 10 every second
+                self.DRIVING_SPEED = 0.75
             elif Level == "normal":
                 self.score += 20  # Increase score by 20 every second
+                self.DRIVING_SPEED = 1
             elif Level == "hard":
                 self.score += 30  # Increase score by 30 every second
+                self.DRIVING_SPEED = 1.25
             if self.score > 9999:
                 self.score = 9999  # Limit score to 9999
             self.score_label.text = f"Score: {self.score}"  # Update score
 
     def restart(self):
         Clock.unschedule(self.game_running)
-
         self.pause_text = "p for pause"
+        self.time_label.text = "Time: 0"
+        self.score = 0
+        for i in range(0, len(self.hearts)):
+            self.remove_widget(self.hearts[0])
+            self.hearts.pop(0)
+        self.hearts = []
         self.HEART = 3
+        for i in self.copy_harts:
+            heart = i
+            self.add_widget(heart)
+            self.hearts.append(heart)
         self.Immortal = 0
         self.floors_coordinates = []
+
         for i in range(0, len(self.enemys)):
             self.canvas.remove(self.enemys[i])
         self.enemys = []
@@ -299,28 +311,14 @@ class GameWidget(Widget):
         self.current_offset_y = 0
         self.current_y_loop = 0
 
-        self.DRIVING_SPEED = 0.3
-        self.generate_floors_coordinates()
-        self.game_running = Clock.schedule_interval(self.update, 1 / 30)
-
-    def restart(self):
-        Clock.unschedule(self.game_running)
-
-        self.pause_text = "p for pause"
-        self.HEART = 3
-        self.Immortal = 0
-        self.floors_coordinates = []
-        for i in range(0, len(self.enemys)):
-            self.canvas.remove(self.enemys[i])
-        self.enemys = []
-        self.enemys_coordinates = []
-
-        self.current_direction_car = 0
-        self.current_offset_x = 0
-        self.current_offset_y = 0
-        self.current_y_loop = 0
-
-        self.DRIVING_SPEED = 0.3
+        global Level
+        if Level == "easy":
+            self.DRIVING_SPEED = 0.75
+        elif Level == "normal":
+            self.DRIVING_SPEED = 1
+        elif Level == "hard":
+            self.DRIVING_SPEED = 1.25
+        self.is_paused = False
         self.generate_floors_coordinates()
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
@@ -340,19 +338,19 @@ class GameWidget(Widget):
         elif "s" == keycode[1]:
             self.DRIVING_SPEED -= 0.01
         elif "n" == keycode[1]:
-            # wClock.unschedule(self.game_running)
             self.restart()
         elif "p" == keycode[1]:
             global STATE_CURRENT
             if STATE_CURRENT == STATE_RESTART:
                 self.pause_text = "p for pause"
                 STATE_CURRENT = STATE_PLAY
-                # switch_screen()
+                self.is_paused = False
+
                 self.game_running = Clock.schedule_interval(self.update, 1 / 30)
             elif STATE_CURRENT == STATE_PLAY:
                 self.pause_text = "p for resume"
                 STATE_CURRENT = STATE_RESTART
-                # switch_screen()
+                self.is_paused = True
                 Clock.unschedule(self.game_running)
             print("stop", self.pause_text)
 
@@ -457,13 +455,12 @@ class GameWidget(Widget):
         self.add_widget(self.score_label)
 
         Clock.schedule_interval(self.update_time_and_score, 1)
-
         # Add hearts
-        self.hearts = []
         heart_y = self.height / 2 + 1000 * min(
             SCREEN_W / 1440, SCREEN_H / 800
         )  # Set y-coordinate for all hearts
-        for i in range(3):
+
+        for i in range(0, self.HEART):
             heart = Image(
                 source="./images/pixel_heart.png",
                 size=(
@@ -477,6 +474,7 @@ class GameWidget(Widget):
             )
             self.add_widget(heart)
             self.hearts.append(heart)
+            self.copy_harts.append(heart)
 
     def update_background(self): ...
 
@@ -739,7 +737,8 @@ class GameWidget(Widget):
 
     # main update
     def update(self, dt):
-        if STATE_CURRENT == STATE_INIT:
+        global over_screen, STATE_CURRENT
+        if STATE_CURRENT != STATE_PLAY:
             return
         # real time
         time_factor = dt * 30
@@ -747,7 +746,6 @@ class GameWidget(Widget):
         self.update_horizontal_lines()
         self.update_floors()
         if self.Immortal > 0:
-            print(self.Immortal)
             self.opacity_car()
             self.Immortal -= dt
 
@@ -756,13 +754,17 @@ class GameWidget(Widget):
             if self.collision_car():
                 if self.HEART <= 0 and self.Immortal <= 0:
                     print("over")
+                    self.is_paused = True
                     Clock.unschedule(self.game_running)
+                    over_screen.set_result_score(self.score)
+                    STATE_CURRENT = STATE_GAMEOVER
+                    switch_screen()
                     return
                 elif self.HEART > 0 and self.Immortal <= 0:
                     print("hit")
                     if self.hearts:
-                            self.remove_widget(self.hearts[0])
-                            self.hearts.pop(0)
+                        self.remove_widget(self.hearts[0])
+                        self.hearts.pop(0)
                     self.HEART -= 1
                     self.Immortal = 3
 
@@ -803,7 +805,7 @@ class GameWidget(Widget):
 
 class Chocobo_RacingApp(App):
     def build(self):
-        global screen_manager
+        global screen_manager, over_screen, game_screen
         screen_manager = ScreenManager()
         start_screen = StartScreen(name="start")
         game_screen = GameScreen(name="play")
