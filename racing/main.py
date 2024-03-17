@@ -274,7 +274,7 @@ class GameWidget(Widget):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
+        self.bird_speed = 60 
         self.init_background()
         self.clouds = []
         self.init_vertical_lines()
@@ -303,6 +303,17 @@ class GameWidget(Widget):
                         self.width,
                         instruction.pos[1]
                     )
+            elif isinstance(instruction, Image) and instruction.source == "./images/bird.gif":
+                # Update bird position
+                instruction.pos = (
+                    instruction.pos[0] - dt * self.bird_speed,
+                    instruction.pos[1]
+                )
+                # Wrap around if bird goes off-screen
+                if instruction.right < 0:
+                    instruction.right = self.width
+                
+        #print("Bird position:", self.bird.pos)
 
     # time and score
     def update_time_and_score(self, dt):
@@ -447,15 +458,16 @@ class GameWidget(Widget):
                     cloud_pos_x += randint(-40, 40) * min(SCREEN_W / 1440, SCREEN_H / 800)
                     cloud_pos_y += randint(-10, 10) * min(SCREEN_W / 1440, SCREEN_H / 800)
 
-            # Draw sunset
-            Color(*[component / 255 for component in sunset_color])
-            Ellipse(
-                pos=(self.width / 2 - 125, self.height * 0.7),
+            # Add bird
+            self.bird = Image(
+                source="./images/bird.gif",
                 size=(
-                    250 * min(SCREEN_W / 1440, SCREEN_H / 800),
-                    250 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                    400 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                    400 * min(SCREEN_W / 1440, SCREEN_H / 800),
                 ),
             )
+            self.bird.pos = (Window.width / 2 + 300, Window.height / 2 + 250)
+            self.add_widget(self.bird)
             # Color(*[component / 255 for component in sunset_color])
             # Ellipse(
             #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
