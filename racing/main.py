@@ -106,8 +106,9 @@ class OverScreen(Screen):
 
 
 class Car(Widget):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+
+    def __init__(self):
+        super(Car).__init__()
         # self.source = "./images/car.png"
         self.color = [0, 0, 1]
         self.size = (100, 100)  # Adjusted size
@@ -148,7 +149,7 @@ class GameWidget(Widget):
     car = None
     # left right
     car_coordinates = [(0, 0), (0, 0)]
-
+    car_opacity = 1
     number_enemy = 10
     enemys = []
     enemys_coordinates = []
@@ -297,6 +298,7 @@ class GameWidget(Widget):
     # car
     def init_car(self):
         with self.canvas:
+            Color(1, 1, 1, self.car_opacity)
             self.car = Rectangle(
                 fit_mode="cover",
                 source="./images/car_cut.png",
@@ -543,6 +545,13 @@ class GameWidget(Widget):
             x2, y2 = self.transform(xmax, line_y)
             self.horizontal_lines[i].points = [x1, y1, x2, y2]
 
+    def opacity_car(self):
+        old_car = self.car
+        self.canvas.remove(self.car)
+        self.canvas.add(Color(1, 1, 1, 0.5))
+        self.canvas.add(old_car)
+        self.canvas.add(Color(1, 1, 1, 1))
+
     # main update
     def update(self, dt):
         if STATE_CURRENT == STATE_INIT:
@@ -552,6 +561,11 @@ class GameWidget(Widget):
         self.update_vertical_lines()
         self.update_horizontal_lines()
         self.update_floors()
+        if self.Immortal > 0:
+            print(self.Immortal)
+            self.opacity_car()
+            self.Immortal -= dt
+
         if len(self.enemys_coordinates) != 0:
             self.update_enemys()
             if self.collision_car():
@@ -559,13 +573,11 @@ class GameWidget(Widget):
                     print("over")
                     Clock.unschedule(self.game_running)
                     return
-                elif self.Immortal > 0:
-                    print("immortal")
-                    self.Immortal -= int(time_factor)
-                else:
+                elif self.HEART > 0 and self.Immortal <= 0:
                     print("hit")
                     self.HEART -= 1
-                    self.Immortal = 6
+                    self.Immortal = 3
+
         self.update_background()
 
         self.update_car()
