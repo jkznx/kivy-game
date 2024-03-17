@@ -429,7 +429,7 @@ class GameWidget(Widget):
                 )
             )
 
-    def re_draw_behide_car(self, i):
+    def redraw_behide_car(self, i):
         old_car = self.car
         old_enemy = self.enemys[i]
         self.canvas.remove(self.car)
@@ -437,7 +437,14 @@ class GameWidget(Widget):
         self.canvas.add(old_car)
         self.canvas.add(old_enemy)
 
+    def redraw_enemy(self):
+        for i in range(self.number_enemy - 1, -1, -1):
+            old_enemy = self.enemys[i]
+            self.canvas.remove(old_enemy)
+            self.canvas.add(old_enemy)
+
     def update_enemys(self):
+        self.redraw_enemy()
         for i in range(0, self.number_enemy):
             enemy = self.enemys[i]
             enemy_coordinates = self.enemys_coordinates[i]
@@ -463,8 +470,8 @@ class GameWidget(Widget):
                 enemy.pos = [x1 + enemy.size[0] / 2, y1]
 
             # draw new z index car and enemy
-            if self.enemys[i].pos[1] < self.car.pos[1]:
-                self.re_draw_behide_car(i)
+            if self.enemys[i].pos[1] < self.car.pos[1] - self.car.size[1] * 0.2:
+                self.redraw_behide_car(i)
 
     # line
     def init_vertical_lines(self):
@@ -514,8 +521,8 @@ class GameWidget(Widget):
             self.update_enemys()
             if self.collision_car():
                 print("over")
-                # Clock.unschedule(self.game_running)
-                # return
+                Clock.unschedule(self.game_running)
+                return
         self.update_car()
         speed_y = self.DRIVING_SPEED * self.height / 100
         self.current_offset_y += speed_y * time_factor
