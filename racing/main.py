@@ -33,17 +33,24 @@ STATE_INIT = 1
 STATE_PLAY = 2
 STATE_RESTART = 3
 STATE_GAMEOVER = 4
+STATE_LEVEL = 5
 
 STATE_CURRENT = STATE_INIT
+
+Level = "easy"
 
 
 def switch_screen():
     global STATE_CURRENT
     if STATE_CURRENT == STATE_INIT:
         screen_manager.current = "start"
-    if STATE_CURRENT == STATE_PLAY:
+    if STATE_CURRENT == STATE_LEVEL:
+        screen_manager.current = "menu"
+    elif STATE_CURRENT == STATE_PLAY:
         screen_manager.current = "play"
-    if STATE_CURRENT == STATE_GAMEOVER:
+    elif STATE_CURRENT == STATE_GAMEOVER:
+        screen_manager.current = "over"
+    elif STATE_CURRENT == STATE_GAMEOVER:
         screen_manager.current = "over"
 
 
@@ -87,7 +94,7 @@ class StartScreen(Screen):
 
     def start_game(self, instance):
         global STATE_CURRENT
-        STATE_CURRENT = STATE_PLAY
+        STATE_CURRENT = STATE_LEVEL
         switch_screen()
 
 
@@ -130,14 +137,13 @@ class MenuScreen(Screen):
         layout.add_widget(easy_button)
         layout.add_widget(normal_button)
         layout.add_widget(hard_button)
-
         self.add_widget(layout)
 
-        self.game_widget = GameWidget()
-        self.add_widget(self.game_widget)
-
     def set_difficulty(self, difficulty_level):
-        self.game_widget.difficulty_level = difficulty_level
+        global Level,STATE_CURRENT
+        Level=difficulty_level
+        STATE_CURRENT=STATE_PLAY
+        switch_screen()
 
 
 class OverScreen(Screen):
@@ -226,7 +232,6 @@ class GameWidget(Widget):
     HEART = 3
     Immortal = 0
     is_paused = False
-    difficulty = "easy"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -243,20 +248,18 @@ class GameWidget(Widget):
         self._keyboard.bind(on_key_up=self._on_key_up)
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
 
-    def set_difficulty(self, difficulty_level):
-        self.difficulty = difficulty_level
-
     # time and score
     def update_time_and_score(self, dt):
+        global Level
         if not self.is_paused:
             self.time_label.text = (
                 f"Time: {int(self.time_label.text.split(': ')[-1]) + 1}"  # Update time
             )
-            if self.difficulty == "easy":
+            if Level == "easy":
                 self.score += 10  # Increase score by 10 every second
-            elif self.difficulty == "normal":
+            elif Level == "normal":
                 self.score += 20  # Increase score by 20 every second
-            elif self.difficulty == "hard":
+            elif Level == "hard":
                 self.score += 30  # Increase score by 30 every second
             if self.score > 9999:
                 self.score = 9999  # Limit score to 9999
@@ -759,13 +762,13 @@ class Chocobo_RacingApp(App):
         screen_manager = ScreenManager()
         start_screen = StartScreen(name="start")
         game_screen = GameScreen(name="play")
-        # menu_screen = MenuScreen(name="menu")
-        # over_screen = OverScreen(name="over")
+        menu_screen = MenuScreen(name="menu")
+        over_screen = OverScreen(name="over")
 
         screen_manager.add_widget(start_screen)
         screen_manager.add_widget(game_screen)
-        # screen_manager.add_widget(menu_screen)
-        # screen_manager.add_widget(over_screen)
+        screen_manager.add_widget(menu_screen)
+        screen_manager.add_widget(over_screen)
 
         return screen_manager
 
