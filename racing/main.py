@@ -803,7 +803,9 @@ class GameWidget(Widget):
             self.is_paused = False
             self.game_running = Clock.schedule_interval(self.update, 1 / 30)
             print("play")
-class ChocoboRacingApp(App):
+
+
+class Chocobo_RacingApp(App):
     def build(self):
         global screen_manager
         screen_manager = ScreenManager()
@@ -821,4 +823,4 @@ class ChocoboRacingApp(App):
 
 
 if __name__ == "__main__":
-    ChocoboRacingApp().run()
+    Chocobo_RacingApp().run()
