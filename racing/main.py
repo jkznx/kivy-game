@@ -22,6 +22,8 @@ from kivy.graphics import Line, Quad, Triangle
 from kivy.properties import NumericProperty, StringProperty
 from kivy.core.image import Image as Im
 from kivy.uix.image import Image
+from kivy.core.audio import SoundLoader
+from kivy.vector import Vector
 from random import randint, randrange, choice
 import math
 
@@ -38,6 +40,7 @@ STATE_LEVEL = 5
 STATE_CURRENT = STATE_INIT
 
 Level = "easy"
+cloud_group_positions = [(300, 800), (1200, 850), (600, 750)]
 
 
 def switch_screen():
@@ -92,11 +95,18 @@ class StartScreen(Screen):
         layout.add_widget(start_button)
         self.add_widget(layout)
 
+        self.start_sound = SoundLoader.load('./sounds/start_sound.wav')
+        if self.start_sound:
+            self.start_sound.loop = True
+            self.start_sound.play()
+
     def start_game(self, instance):
         global STATE_CURRENT
         STATE_CURRENT = STATE_LEVEL
         switch_screen()
 
+        if self.start_sound:
+            self.start_sound.stop()
 
 class GameScreen(Screen):
     pass
@@ -153,12 +163,17 @@ class MenuScreen(Screen):
         layout.add_widget(hard_button)
         self.add_widget(layout)
 
+        self.game_sound = SoundLoader.load('./sounds/game_sound.mp3')
+
     def set_difficulty(self, difficulty_level):
         global Level, STATE_CURRENT
         Level = difficulty_level
         STATE_CURRENT = STATE_PLAY
         switch_screen()
 
+        if self.game_sound:
+            self.game_sound.loop = True
+            self.game_sound.play()
 
 class OverScreen(Screen):
     def __init__(self, **kwargs):
@@ -260,6 +275,7 @@ class GameWidget(Widget):
         super().__init__(**kwargs)
 
         self.init_background()
+        self.clouds = []
         self.init_vertical_lines()
         self.init_horizontal_lines()
         self.init_floors()
@@ -271,6 +287,7 @@ class GameWidget(Widget):
         self._keyboard.bind(on_key_up=self._on_key_up)
 
         self.game_running = Clock.schedule_interval(self.update, 1 / 30)
+        Clock.schedule_interval(self.update_clouds, 1/60)
 
     # time and score
     def update_time_and_score(self, dt):
@@ -384,7 +401,6 @@ class GameWidget(Widget):
             self.update_heart()
 
     def update_heart(self):
-        # Update the positions of heart icons on the screen
         num_hearts = len(self.hearts)
         for i, heart in enumerate(self.hearts):
             heart.x = i * (heart.width + self.heart_spacing)
@@ -393,6 +409,7 @@ class GameWidget(Widget):
     # background
     def init_background(self):
         with self.canvas.before:
+
             # self.bg = Rectangle(
             #     size=Window.size,
             #     source="./images/racing_bg_3.png",
@@ -402,26 +419,28 @@ class GameWidget(Widget):
             Color(*[component / 255 for component in blue_sky])
             self.sky = Rectangle(pos=(0, 0), size=(Window.size))
 
-            # cloud on sky
-            cloud_group_positions = [
-                (Window.size[0] * 0.2, Window.size[1] * 0.85),
-                (Window.size[0] * 0.5, Window.size[1] * 0.88),
-                (Window.size[0] * 0.8, Window.size[1] * 0.9),
-            ]
-
+            # Draw clouds
             for cloud_pos_x, cloud_pos_y in cloud_group_positions:
                 for _ in range(30):
-                    cloud_size = randint(30, 120)
+                    cloud_size = randint(30, 120) * min(SCREEN_W / 1440, SCREEN_H / 800)
                     cloud_color = white
 
                     Color(*[component / 255 for component in cloud_color])
-                    self.clound = Ellipse(
+                    Ellipse(
                         pos=(cloud_pos_x, cloud_pos_y), size=(cloud_size, cloud_size)
                     )
-                    cloud_pos_x += randint(-30, 30)
-                    cloud_pos_y += randint(-10, 10)
+                    cloud_pos_x += randint(-30, 30) * min(SCREEN_W / 1440, SCREEN_H / 800)
+                    cloud_pos_y += randint(-10, 10) * min(SCREEN_W / 1440, SCREEN_H / 800)
 
-            # add sunset at the center of bottom sky
+            # Draw sunset
+            Color(*[component / 255 for component in sunset_color])
+            Ellipse(
+                pos=(self.width / 2 - 125, self.height * 0.7),
+                size=(
+                    250 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                    250 * min(SCREEN_W / 1440, SCREEN_H / 800),
+                ),
+            )
             # Color(*[component / 255 for component in sunset_color])
             # Ellipse(
             #     pos=(Window.size[0] / 2 - 75, Window.size[1] * 0.7), size=(150, 150)
@@ -484,8 +503,21 @@ class GameWidget(Widget):
             self.hearts.append(heart)
             self.copy_harts.append(heart)
 
-    def update_background(self): ...
+    def update_clouds(self, dt):
+        # Update the positions of all Ellipse objects (clouds)
+        for instruction in self.canvas.before.children[:]:
+            if isinstance(instruction, Ellipse):
+                instruction.pos = (
+                    instruction.pos[0] - dt * self.DRIVING_SPEED,
+                    instruction.pos[1]
+                )
+                if instruction.pos[0] + instruction.size[0] < 0:
+                    instruction.pos = (
+                        self.width,
+                        instruction.pos[1]
+                    )   
 
+    def update_background(self): ...
     # car
     def init_car(self):
         with self.canvas:
